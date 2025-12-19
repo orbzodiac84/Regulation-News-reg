@@ -39,6 +39,7 @@ Visit [http://localhost:3000](http://localhost:3000).
 - `src/collectors/`: RSS Parser & HTML Scraper.
 - `src/services/`: Gemini Analyzer & Telegram Notifier.
 - `web/`: Next.js Web Dashboard.
+- `scripts/`: Debug and utility scripts.
 
 ## 🛠 Features
 - **5 Agencies**: FSC, FSS, MOEF, BOK, MAFRA.
