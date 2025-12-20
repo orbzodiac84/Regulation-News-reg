@@ -5,13 +5,14 @@ import random
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import logging
+from config import settings
 
 logger = logging.getLogger(__name__)
 
 class ContentScraper:
     def __init__(self):
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': settings.USER_AGENT
         }
 
     def fetch_content(self, url: str, agency_config: Dict) -> Optional[str]:
@@ -34,9 +35,9 @@ class ContentScraper:
         
         try:
             # Random delay
-            time.sleep(random.uniform(0.5, 1.5))
+            time.sleep(random.uniform(settings.SCRAPER_RETRY_DELAY_MIN, settings.SCRAPER_RETRY_DELAY_MAX))
             
-            response = requests.get(url, headers=self.headers, timeout=10)
+            response = requests.get(url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -53,7 +54,7 @@ class ContentScraper:
                 
             content_div = soup.select_one(container_selector)
             if not content_div:
-                print(f"Container not found for {url} ({container_selector})")
+                logger.warning(f"Container not found for {url} ({container_selector})")
                 return None
             
             # Remove unwanted elements
@@ -63,11 +64,11 @@ class ContentScraper:
                     match.decompose()
             
             # Extract text
-            text = content_div.get_text(separator='\n', strip=True)
-            return text
+            text_content = content_div.get_text(separator='\n', strip=True)
+            return text_content
 
         except Exception as e:
-            print(f"Error scraping {url}: {e}")
+            logger.error(f"Error scraping content from {url}: {e}")
             return None
 
     def fetch_list_items(self, agency_config: Dict, last_crawled_date: datetime = None) -> List[Dict]:
@@ -96,8 +97,8 @@ class ContentScraper:
 
         items = []
         try:
-            time.sleep(random.uniform(2.0, 4.0)) # Anti-ban delay
-            response = requests.get(source_url, headers=self.headers, timeout=20, verify=False)
+            time.sleep(random.uniform(settings.SCRAPER_RETRY_DELAY_MIN, settings.SCRAPER_RETRY_DELAY_MAX)) # Anti-ban delay
+            response = requests.get(source_url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=False)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')

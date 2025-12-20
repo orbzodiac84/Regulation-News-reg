@@ -2,19 +2,19 @@
   "agencies": [
     {
       "code": "FSC",
-      "name": "금융위원회",
+      "name": "금융위 (FSC)",
       "collection_method": "rss",
       "url": "http://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111"
     },
     {
       "code": "MOEF",
-      "name": "기획재정부",
+      "name": "기재부 (MOEF)",
       "collection_method": "rss",
       "url": "https://www.korea.kr/rss/dept_moef.xml"
     },
     {
       "code": "FSS",
-      "name": "금융감독원",
+      "name": "금감원 (FSS)",
       "collection_method": "scraper",
       "url": "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218",
       "selector": {
@@ -27,7 +27,7 @@
     },
     {
       "code": "BOK",
-      "name": "한국은행",
+      "name": "한은 (BOK)",
       "collection_method": "scraper",
       "url": "https://www.bok.or.kr/portal/singl/newsData/listCont.do?menuNo=201263&pageIndex=1",
       "selector": {
@@ -37,12 +37,6 @@
         "link": "a.title",
         "content": ".dbdata"
       }
-    },
-    {
-      "code": "MAFRA",
-      "name": "농림축산식품부",
-      "collection_method": "rss",
-      "url": "https://www.mafra.go.kr/bbs/home/792/rssList.do?row=50"
     }
   ]
 }

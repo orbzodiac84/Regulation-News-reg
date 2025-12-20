@@ -88,21 +88,43 @@ class HybridAnalyzer:
         prompt = f"""
         You are a news relevance filter for a Korean commercial bank's risk management team.
         
-        **Task**: Determine if this news is relevant to "Korean commercial banks' risk management, regulatory compliance, or macroeconomic indicators".
+        **Task**: Determine if this news is relevant to "Korean commercial banks' risk management" and assign an importance score.
         
         **Input**:
         - Source: {agency_name}
         - Title: {title}
         - Summary: {description}
         
-        **Criteria**:
-        - Relevant: Banking regulations, monetary policy, interest rates, debt, capital requirements, compliance rules
-        - Not Relevant: Promotions, events, awards, internal appointments, unrelated industries
+        **Scoring Guidelines (Based on 'Banking Business Impact' & 'Actionability')**:
+        
+        **High (Score 4-5): Immediate Strategy Revision / ALCO Agenda (Must Act)**
+        *Criteria: If the news requires an ALCO or Risk Committee meeting tomorrow, or impacts the following:*
+        1. **4 Pillars**:
+           - **Loan (여신)**: DSR/LTV changes, Provisioning rules, Underwriting guidelines.
+           - **Deposit (수신)**: Rate disclosure rules, liquidity coverage requirements, funding competition limits.
+           - **Compliance (준법)**: Bank Act amendments, Internal Control (Book of Responsibilities), Consumer Protection Act.
+           - **Capital (재무)**: BIS ratio rules, Dividend restrictions, LCR/NSFR changes.
+        2. **Market/Biz Impact**:
+           - **Macro**: BOK Base Rate decisions, Major liquidity supply.
+           - **New Biz**: Permission for new ventures (Platform, non-financial), Restrictions on core earnings (Interest income).
+           - **Spillover**: Major crises in securities/insurance sectors affecting bank subsidiaries or stability.
+        
+        **Moderate (Score 3): Monitoring / Watch List**
+        *Criteria: General market monitoring or indirect references.*
+        - **Market**: Exchange rate/Interest rate trends (without policy shifts).
+        - **Indirect**: Regulations for other sectors (Card/Insurance) with minor spillover to banks.
+        - **Reports**: Household debt stats (monthly), Delinquency rate trends (if not crisis level).
+
+        **Low (Score 1-2): Routine / Irrelevant**
+        *Criteria: Administrative or unrelated.*
+        - **Routine**: Bond auctions, weekly schedules, holiday notices.
+        - **Admin**: Personnel news, Awards, MOUs without binding policy changes.
+        - **Irrelevant**: Exclusive issues of other sectors (Savings banks, Pawn shops) with zero bank impact.
         
         **Output** (JSON only):
         {{
-            "is_relevant": boolean,
-            "importance_score": integer (1-5, where 5 is most important)
+            "is_relevant": boolean, (True if Score >= 1, False if completely unrelated like 'Ads')
+            "importance_score": integer (1-5)
         }}
         """
         
@@ -122,21 +144,43 @@ class HybridAnalyzer:
         Uses full article content.
         """
         prompt = f"""
-        You are a **Senior Risk Analyst** at a major Korean commercial bank.
+        [Role] 당신은 대형 증권사 리서치 센터의 금융 규제 전문 애널리스트입니다. 수집된 규제 뉴스를 분석하여 기관 투자자와 은행 실무자가 즉시 참고할 수 있는 리포트 형식으로 정리합니다.
+
+        [Output Style Guidelines]
+        이모티콘 사용 절대 금지: 시각적 가독성을 위한 기호(•, -) 외의 어떠한 이모티콘도 사용하지 않음.
+        명사형 문장 종결: 모든 문장은 명사 또는 명사형 어미(~함, ~임, ~예상, ~분석됨)로 끝맺음.
+        구두점 제한: 문장 끝에 마침표(.)나 느낌표(!)를 포함하지 않음.
+        간결성: 수식어를 배제하고 핵심 사실과 영향만을 드라이하게 서술함.
+        전문 용어 사용: 금융공학 및 리스크 관리 관점의 전문 용어(ALM, LCR, NIM, 자본비율 등)를 정확히 사용함.
+
+        [Analysis Logic: Banking Impact & Actionability]
+        **Core Question**: "Does this news require immediate strategy revision for Bank's Survival (Regulation/Risk) or Profit (Business)?"
         
-        **Task**: Provide a detailed analysis of this regulatory news for the risk management team.
+        **Analyze Impact based on:**
+        1. **4 Pillars (Changes in fundamentals)**:
+           - **Credit (여신)**: DSR/DTI, LTV, Provisioning, Underwriting.
+           - **Funding (수신)**: Rates, Liquidity (LCR), Marketing restrictions.
+           - **Compliance**: Book of Responsibilities, Internal Control, penalties.
+           - **Capital/Treasury**: BIS Ratio, Dividends, Valuation losses.
         
+        2. **Risk Tagging & Thresholds** (Mention if critical):
+           - **[Credit]**: Asset quality deterioration.
+           - **[Market]**: Rate/FX volatility hitting trading books.
+           - **[Liquidity]**: Funding stress, Bank run signs.
+           - **[Interest]**: NIM compression risks.
+           - **[Operational]**: System failures, Fraud/Embezzlement impacts.
+        
+        3. **Business Opportunity/Threat**:
+           - New business permissions (platform) or Restrictions on fee income.
+        
+        **Output Instructions**:
+        - **Banking Impact**: Specifically mention which of the above pillars or risks are affected. If 'High' importance, specify the "Action Item" (e.g., "Review LTV limits").
+        - **No Impact**: If unrelated, state "Limited direct impact on commercial banks."
+
         **Input**:
         - Source: {agency_name}
         - Title: {title}
         - Full Content: {full_content}
-        
-        **Requirements**:
-        1. **Summary**: 3 concise bullet points with emojis (Korean, "Jjirasi" style)
-        2. **Impact Analysis**: How this affects Korean commercial banks specifically
-        3. **Risk Level**: High / Medium / Low
-        4. **Recommended Actions**: What the bank should do in response
-        5. **Keywords**: 3-5 relevant keywords
         
         **Output** (JSON only):
         {{
