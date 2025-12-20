@@ -11,8 +11,22 @@ MODEL_ANALYZER_FALLBACK = "gemini-1.5-pro"
 
 # Importance threshold to trigger Tier 2 analysis
 # Only articles with importance_score >= this value get deep analysis
-IMPORTANCE_THRESHOLD = 4
+IMPORTANCE_THRESHOLD = 3
 
 # Rate limiting (seconds between API calls)
 # With billing enabled, 0.5s is safe and fast
 API_CALL_DELAY = 0.5
+
+# --- Scraper Settings ---
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+SCRAPER_TIMEOUT = 20
+SCRAPER_RETRY_DELAY_MIN = 2.0
+SCRAPER_RETRY_DELAY_MAX = 4.0
+
+# --- Scheduler Settings ---
+COLLECTION_INTERVAL_MINUTES = 10
+
+# --- Logging Settings ---
+LOG_FILE_PATH = "logs/app.log"
+LOG_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+LOG_BACKUP_COUNT = 5
