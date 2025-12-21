@@ -43,6 +43,8 @@ Visit [http://localhost:3000](http://localhost:3000).
 
 ## 🛠 Features
 - **5 Agencies**: FSC, FSS, MOEF, BOK, MAFRA.
-- **Analysis**: Gemini-based impact analysis for Banking sector.
+- **Smart Analysis**:
+  - **Tier 1 (Gatekeeper)**: Fast filtering with `gemini-2.5-flash-lite`.
+  - **Tier 2 (Deep Dive)**: Detailed impact analysis & report generation using `gemini-3-flash-preview`.
 - **Notification**: Telegram alerts.
-- **Dashboard**: Simple list view with Passcode protection.
+- **Dashboard**: Simple list view with Passcode protection & AI Briefing Documents.
