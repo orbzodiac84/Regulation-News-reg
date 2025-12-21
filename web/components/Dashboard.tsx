@@ -59,11 +59,15 @@ const Icons = {
 
 import ReportModal from './ReportModal'
 
-export default function Dashboard() {
-    const [articles, setArticles] = useState<Article[]>([])
+interface DashboardProps {
+    initialArticles?: Article[]
+}
+
+export default function Dashboard({ initialArticles = [] }: DashboardProps) {
+    const [articles, setArticles] = useState<Article[]>(initialArticles)
     const [selectedAgency, setSelectedAgency] = useState('All')
     const [selectedRisk, setSelectedRisk] = useState('All')
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(initialArticles.length === 0)
     const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline') // Default to Timeline
 
     // Timeline View State: Expanded dates (Initially Empty = All Collapsed)
