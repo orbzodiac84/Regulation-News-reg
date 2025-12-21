@@ -237,21 +237,21 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
 
         return (
             <div className="group relative bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-sky-200 hover:shadow-md hover:shadow-sky-100/50 transition-all duration-300 mb-6 last:mb-0">
-                <div className="px-6 py-5">
+                <div className="px-4 sm:px-6 py-5">
                     {/* Meta */}
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide ${getAgencyColor(article.agency)}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <span className={`px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wide ${getAgencyColor(article.agency)}`}>
                                 {agencyDisplayNames[article.agency] || article.agency}
                             </span>
                             <span className="text-sm text-slate-400 font-medium">
                                 {formatDate(article.published_at)}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             {/* Risk Tags */}
-                            {analysis?.risk_tags && analysis.risk_tags.map(tag => (
-                                <span key={tag} className="px-2 py-0.5 rounded-md text-[10px] font-bold text-sky-600 bg-sky-50 border border-sky-100">
+                            {analysis?.risk_tags && analysis.risk_tags.slice(0, 2).map(tag => (
+                                <span key={tag} className="px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold text-sky-600 bg-sky-50 border border-sky-100 truncate max-w-[80px] sm:max-w-none">
                                     {tag}
                                 </span>
                             ))}
@@ -265,8 +265,8 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                     </div>
 
                     {/* Title & Action */}
-                    <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-lg font-bold text-slate-900 leading-snug group-hover:text-sky-600 transition-colors flex-1">
+                    <div className="flex items-start justify-between gap-2 sm:gap-4">
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug group-hover:text-sky-600 transition-colors flex-1 break-words">
                             <a href={article.link} target="_blank" rel="noopener noreferrer" className="block outline-none">
                                 {article.title}
                             </a>
@@ -275,7 +275,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                         {/* Report Button (Prominent) */}
                         <button
                             onClick={() => handleOpenReport(article)}
-                            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-sm shadow-sky-200 hover:shadow-md transition-all transform hover:-translate-y-0.5"
+                            className="flex-shrink-0 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white rounded-lg text-[10px] sm:text-xs font-bold shadow-sm shadow-sky-200 hover:shadow-md transition-all transform hover:-translate-y-0.5"
                             title="AI 심층 리포트 생성"
                         >
                             <Icons.Sparkles />
