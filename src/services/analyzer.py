@@ -144,52 +144,46 @@ class HybridAnalyzer:
         Uses full article content.
         """
         prompt = f"""
-        [Role] 당신은 대형 증권사 리서치 센터의 금융 규제 전문 애널리스트입니다. 수집된 규제 뉴스를 분석하여 기관 투자자와 은행 실무자가 즉시 참고할 수 있는 리포트 형식으로 정리합니다.
+        # Role
+        당신은 시중은행 전략기획부(CSO) 및 리스크관리부(CRO) 소속 수석 분석가입니다. 
+        당신의 임무는 금융당국의 보도자료를 분석하여 '은행 실무 및 리스크'에 미치는 영향을 평가하고, 경영진이 즉시 의사결정할 수 있는 리포트를 작성하는 것입니다.
 
-        [Output Style Guidelines]
-        이모티콘 사용 절대 금지: 시각적 가독성을 위한 기호(•, -) 외의 어떠한 이모티콘도 사용하지 않음.
-        명사형 문장 종결: 모든 문장은 명사 또는 명사형 어미(~함, ~임, ~예상, ~분석됨)로 끝맺음.
-        구두점 제한: 문장 끝에 마침표(.)나 느낌표(!)를 포함하지 않음.
-        간결성: 수식어를 배제하고 핵심 사실과 영향만을 드라이하게 서술함.
-        전문 용어 사용: 금융공학 및 리스크 관리 관점의 전문 용어(ALM, LCR, NIM, 자본비율 등)를 정확히 사용함.
+        # Core Philosophy (Action-Focused)
+        "이 뉴스로 인해 은행이 내부 규정, 판매 절차, 자본 계획을 수정해야 하는가?"
+        - 은행의 4대 요소[여신(대출), 수신(예금), 컴플라이언스(준법), 재무(자본)]에 직접적인 영향을 주면 무조건 [High]입니다.
+        - 단순 인사, 동정, 타 업권(증권/보험 단독) 소식은 [Low]로 분류합니다.
 
-        [Analysis Logic: Banking Impact & Actionability]
-        **Core Question**: "Does this news require immediate strategy revision for Bank's Survival (Regulation/Risk) or Profit (Business)?"
-        
-        **Analyze Impact based on:**
-        1. **4 Pillars (Changes in fundamentals)**:
-           - **Credit (여신)**: DSR/DTI, LTV, Provisioning, Underwriting.
-           - **Funding (수신)**: Rates, Liquidity (LCR), Marketing restrictions.
-           - **Compliance**: Book of Responsibilities, Internal Control, penalties.
-           - **Capital/Treasury**: BIS Ratio, Dividends, Valuation losses.
-        
-        2. **Risk Tagging & Thresholds** (Mention if critical):
-           - **[Credit]**: Asset quality deterioration.
-           - **[Market]**: Rate/FX volatility hitting trading books.
-           - **[Liquidity]**: Funding stress, Bank run signs.
-           - **[Interest]**: NIM compression risks.
-           - **[Operational]**: System failures, Fraud/Embezzlement impacts.
-        
-        3. **Business Opportunity/Threat**:
-           - New business permissions (platform) or Restrictions on fee income.
-        
-        **Output Instructions**:
-        - **Banking Impact**: Specifically mention which of the above pillars or risks are affected. If 'High' importance, specify the "Action Item" (e.g., "Review LTV limits").
-        - **No Impact**: If unrelated, state "Limited direct impact on commercial banks."
+        # Constraints
+        - 스타일: 이모지 사용 절대 금지, 명사형 종결(~함, ~임) 사용.
+        - 톤앤매너: 냉철하고 전문적인 리서치 리포트 스타일.
+        - 리스크 분류: 반드시 [신용, 시장, 운용, 유동성, 금리, 기타] 중 해당되는 것을 모두 선택하십시오.
 
-        **Input**:
-        - Source: {agency_name}
-        - Title: {title}
-        - Full Content: {full_content}
-        
-        **Output** (JSON only):
+        # Output Format (Strict JSON)
         {{
-            "summary": ["string", "string", "string"],
-            "impact_analysis": "string",
-            "risk_level": "High" | "Medium" | "Low",
-            "recommended_actions": "string",
-            "keywords": ["string", ...]
+            "published_date": "YYYY-MM-DD",
+            "source": "{agency_name}",
+            "importance": {{
+                "score": 1-5,
+                "level": "High/Medium/Low",
+                "reason": "중요도 판단 근거 (은행 실무 관점) - 50자 이내"
+            }},
+            "classification": {{
+                "pillars": ["여신", "수신", "컴플라이언스", "재무" 중 해당 항목 복수 선택 가능],
+                "risk_tags": ["신용", "시장", "운용", "유동성", "금리", "기타" 중 해당 리스크 복수 선택 가능]
+            }},
+            "content": {{
+                "title": "보도자료 핵심 제목 (30자 이내)",
+                "key_points": ["핵심 내용 요약 1", "핵심 내용 요약 2", "핵심 내용 요약 3"],
+                "impact_analysis": "은행 비즈니스 및 규제 환경에 미치는 심층 영향 분석 (최대 3문장)",
+                "action_items": ["내일 오전까지 실행 또는 검토해야 할 구체적 조치 1", "내일 오전까지 실행 또는 검토해야 할 구체적 조치 2"]
+            }}
         }}
+
+        # Input Text
+        Title: {title}
+        Source: {agency_name}
+        Content:
+        {full_content[:3000]}
         """
         
         # Try primary model
@@ -202,11 +196,23 @@ class HybridAnalyzer:
         
         if response_text:
             try:
-                result = json.loads(response_text)
-                result['analyzed_by'] = self.analyzer_model
-                return result
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse analysis response: {response_text[:100]}")
+                # Remove Markdown code block if present
+                clean_text = response_text.replace('```json', '').replace('```', '').strip()
+                data = json.loads(clean_text)
+                
+                # Transform to DB schema format
+                return {
+                    "summary": data["content"]["key_points"],
+                    "impact_analysis": data["content"]["impact_analysis"],
+                    "action_items": data["content"]["action_items"],
+                    "risk_level": data["importance"]["level"],
+                    "risk_score": data["importance"]["score"],
+                    "risk_tags": data["classification"]["risk_tags"],
+                    "pillars": data["classification"]["pillars"],
+                    "analyzed_by": self.analyzer_model # Keep track of which model was used
+                }
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f"Failed to parse analysis response: {e}, Text: {response_text[:100]}")
                 return None
         return None
 
