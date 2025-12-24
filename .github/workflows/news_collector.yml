@@ -2,9 +2,8 @@ name: News Collector
 
 on:
   schedule:
-    # KST times: 6AM, 7AM, 9AM, 11AM, 1PM, 3PM, 5PM, 7PM, 9PM, 11PM, 1AM
-    # UTC times: 21, 22, 0, 2, 4, 6, 8, 10, 12, 14, 16
-    - cron: '0 0,2,4,6,8,10,12,14,16,21,22 * * *'
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
