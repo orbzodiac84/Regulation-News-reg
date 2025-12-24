@@ -25,62 +25,6 @@ class ContentScraper:
             'Connection': 'keep-alive'
         }
 
-    def fetch_content(self, url: str, agency_config: Dict) -> Optional[str]:
-        """
-        Fetches article content based on agency configuration (selectors).
-        Supports both 'selector' (new) and 'scraper' (old) keys.
-        """
-        # Support new schema 'selector' or old 'scraper'
-        # New schema: selector: { "container": "..." } or implied?
-        # The prompt examples didn't specify container selector for details, only list/title/date.
-        # But we need content. If not provided, we might fall back to whole body or common logic?
-        # Wait, the prompt json didn't have 'container_selector'.
-        # I'll check if I added it. Step 1856 JSON: list, title, date... no content/container.
-        # For now, I'll rely on 'scraper' key IF present, OR try to find 'content' key in 'selector'.
-        
-        scraper_config = agency_config.get('scraper') or agency_config.get('selector')
-        if not scraper_config:
-            logger.debug(f"No scraper/selector config for {agency_config.get('code')}")
-            return None
-        
-        try:
-            # Random delay
-            time.sleep(random.uniform(settings.SCRAPER_RETRY_DELAY_MIN, settings.SCRAPER_RETRY_DELAY_MAX))
-            
-            response = requests.get(url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=settings.SSL_VERIFY)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Helper to get container_selector
-            # In new schema, maybe we add 'content' key to selector?
-            # Or use a default.
-            container_selector = scraper_config.get('container_selector') or scraper_config.get('content')
-            
-            if not container_selector:
-                # Attempt generic extraction if no selector
-                # Or just return None
-                return None
-                
-            content_div = soup.select_one(container_selector)
-            if not content_div:
-                logger.warning(f"Container not found for {url} ({container_selector})")
-                return None
-            
-            # Remove unwanted elements
-            remove_selectors = scraper_config.get('remove_selectors', [])
-            for sel in remove_selectors:
-                for match in content_div.select(sel):
-                    match.decompose()
-            
-            # Extract text
-            text_content = content_div.get_text(separator='\n', strip=True)
-            return text_content
-
-        except Exception as e:
-            logger.error(f"Error scraping content from {url}: {e}")
-            return None
-
     def fetch_list_items(self, agency_config: Dict, last_crawled_date: datetime = None) -> List[Dict]:
         """
         Fetches list of articles using HTML scraping with incremental logic.
@@ -97,12 +41,21 @@ class ContentScraper:
             logger.error(f"[{agency_config.get('code')}] Missing URL or list selector.")
             return []
 
+        # Timezone setup
+        import pytz
+        kst = pytz.timezone('Asia/Seoul')
+        now_kst = datetime.now(kst)
+
         # 2. Determine Cutoff
+        # Ensure last_crawled_date is offset-aware if passed
+        if last_crawled_date and last_crawled_date.tzinfo is None:
+             last_crawled_date = kst.localize(last_crawled_date)
+
         if last_crawled_date:
             cutoff_date = last_crawled_date - timedelta(days=1)
             logger.info(f"[{agency_config.get('code')}] Incremental: > {cutoff_date.strftime('%Y-%m-%d')}")
         else:
-            cutoff_date = datetime.now() - timedelta(days=7)
+            cutoff_date = now_kst - timedelta(days=7)
             logger.info(f"[{agency_config.get('code')}] Full Scan: > {cutoff_date.strftime('%Y-%m-%d')}")
 
         items = []
@@ -154,15 +107,12 @@ class ContentScraper:
                     # Date Parse & Cutoff
                     pub_date = self._parse_date(date_str)
                     
-                    # If date parsing failed, we might want to default to now() or skip cutoff
-                    # But for safety, if we can't parse date, we treat it as "new" generally, 
-                    # OR we might log a warning.
-                    
                     if pub_date:
                         # Check Force Collect policy from settings
                         agency_code = agency_config.get('code')
                         force_collect = agency_code in settings.FORCE_COLLECT_AGENCIES
                         
+                        # Comparison should work now as both are offset-aware (KST)
                         if force_collect or pub_date >= cutoff_date:
                             if force_collect:
                                 logger.info(f"  [{agency_code}] Force Collecting (Policy): {title} ({pub_date})")
@@ -178,41 +128,106 @@ class ContentScraper:
                             break
                     else:
                         # Fallback if no date found (rare)
+                        # Use KST now
                         items.append({
                             'title': title,
                             'link': link,
-                            'published_at': datetime.now().isoformat(),
+                            'published_at': now_kst.isoformat(),
                              'agency': agency_config.get('code')
                         })
-
-                except Exception as row_e:
-                    logger.debug(f"Row parsing error: {row_e}")
+                except Exception as e:
+                    logger.error(f"[{agency_config.get('code')}] Error processing row: {e}")
                     continue
-                    
+            return items
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"[{agency_config.get('code')}] Request error fetching list from {source_url}: {e}")
+            return []
         except Exception as e:
-            logger.error(f"Error scraping {source_url}: {e}")
+            logger.error(f"[{agency_config.get('code')}] Unexpected error fetching list from {source_url}: {e}")
+            return []
+
+    def fetch_content(self, url: str, agency_config: Dict) -> Optional[str]:
+        """
+        Fetches article content based on agency configuration (selectors).
+        """
+        scraper_config = agency_config.get('scraper') or agency_config.get('selector')
+        if not scraper_config:
+            logger.debug(f"No scraper/selector config for {agency_config.get('code')}")
+            return None
+        
+        try:
+            # Random delay
+            time.sleep(random.uniform(settings.SCRAPER_RETRY_DELAY_MIN, settings.SCRAPER_RETRY_DELAY_MAX))
             
-        return items
+            response = requests.get(url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=settings.SSL_VERIFY)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            container_selector = scraper_config.get('container_selector') or scraper_config.get('content')
+            
+            if not container_selector:
+                return None
+                
+            content_div = soup.select_one(container_selector)
+            if not content_div:
+                logger.warning(f"Container not found for {url} ({container_selector})")
+                return None
+            
+            # Remove unwanted elements
+            remove_selectors = scraper_config.get('remove_selectors', [])
+            for sel in remove_selectors:
+                for match in content_div.select(sel):
+                    match.decompose()
+            
+            # Extract text
+            text_content = content_div.get_text(separator='\n', strip=True)
+            
+            # 🛡️ Data Integrity Check: Short Content Warning
+            # Instead of failing, we tag it so analysis can decide what to do
+            if len(text_content) < 50:
+                logger.warning(f"⚠️ Short content detected ({len(text_content)} chars) for {url}")
+                return f"[Short Content] {text_content}"
+                
+            return text_content
+
+        except Exception as e:
+            logger.error(f"Error scraping content from {url}: {e}")
+            return None
 
     def _parse_date(self, date_str: str) -> Optional[datetime]:
         """
-        Helper to parse various date formats.
+        Helper to parse various date formats and ENFORCE KST (UTC+9).
         """
         if not date_str:
             return None
             
         try:
-            # Clean up: remove "등록일" etc, keep only digits, dots, hyphens
-            # Simplest: Regex find pattern YYYY.MM.DD or YYYY-MM-DD
+            import pytz
             import re
+            
+            # KST Timezone Definition
+            kst = pytz.timezone('Asia/Seoul')
+            
+            # Clean up: remove "등록일" etc, keep only digits, dots, hyphens
             match = re.search(r'(\d{4}[.-]\d{2}[.-]\d{2})', date_str)
+            
+            clean_date_str = ""
             if match:
-                date_str = match.group(1).replace('.', '-')
-                return datetime.strptime(date_str, '%Y-%m-%d')
-                
-            # Fallback for plain replacement if regex misses (unlikely but safe)
-            date_str = date_str.strip().replace('.', '-')
-            return datetime.strptime(date_str, '%Y-%m-%d')
+                clean_date_str = match.group(1).replace('.', '-')
+            else:
+                clean_date_str = date_str.strip().replace('.', '-')
+            
+            # Parse naïve datetime
+            dt = datetime.strptime(clean_date_str, '%Y-%m-%d')
+            
+            # Localize to KST (Midnight KST)
+            # This ensures 2024-12-25 00:00:00 KST
+            dt_kst = kst.localize(dt)
+            
+            return dt_kst
+            
         except ValueError:
             return None
 

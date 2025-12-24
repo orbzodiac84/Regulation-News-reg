@@ -243,6 +243,41 @@ class HybridAnalyzer:
         
         return is_key_agency and has_personnel_keyword
 
+    def _apply_keyword_safeguards(self, title: str, current_score: int) -> int:
+        """
+        Apply rule-based safeguards to ensure important keywords are not undervalued by AI.
+        Reads rules from config/safeguard_keywords.json.
+        """
+        try:
+            config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'safeguard_keywords.json')
+            if not os.path.exists(config_path):
+                return current_score
+                
+            with open(config_path, 'r', encoding='utf-8') as f:
+                safeguards = json.load(f)
+            
+            new_score = current_score
+            
+            # Check High Importance (Score 5)
+            for keyword in safeguards.get('high_importance', {}).get('keywords', []):
+                if keyword in title:
+                    if new_score < 5:
+                        logger.info(f"🛡️ Safeguard triggered (High): '{keyword}' found. Boosting score {current_score} -> 5")
+                        return 5
+            
+            # Check Medium Importance (Score 4)
+            for keyword in safeguards.get('medium_importance', {}).get('keywords', []):
+                if keyword in title:
+                    if new_score < 4:
+                        logger.info(f"🛡️ Safeguard triggered (Medium): '{keyword}' found. Boosting score {current_score} -> 4")
+                        new_score = 4
+                        
+            return new_score
+            
+        except Exception as e:
+            logger.error(f"Error applying safeguards: {e}")
+            return current_score
+
     def process(self, article: Dict[str, Any], agency_name: str) -> Dict[str, Any]:
         """
         Main pipeline: Filter -> Analyze (if important)
@@ -253,62 +288,59 @@ class HybridAnalyzer:
         description = article.get('description') or article.get('content', '')[:200] or title
         full_content = article.get('content') or title
         
-        # Check for key personnel announcements (always HIGH priority)
-        is_personnel = self._is_personnel_announcement(title, agency_name)
-        
-        if is_personnel:
-            logger.info(f"🔴 Personnel announcement detected (Force HIGH): {title[:50]}")
-        
         # Step 1: Gatekeeper
         filter_result = self.filter(title, description, agency_name)
         time.sleep(API_CALL_DELAY)  # Rate limit protection
         
-        if not filter_result:
+        # Default values if filter fails
+        is_relevant = False
+        importance_score = 0
+        filter_status = "OK"
+
+        if filter_result:
+            is_relevant = filter_result.get('is_relevant', False)
+            importance_score = filter_result.get('importance_score', 0)
+        else:
             logger.warning(f"Filter failed for: {title[:50]}")
-            # For personnel announcements, still proceed even if filter fails
-            if is_personnel:
-                filter_result = {"is_relevant": True, "importance_score": 5}
-            else:
-                return {
-                    "is_relevant": False,
-                    "importance_score": 0,
-                    "filter_status": "ERROR",
-                    "analysis_status": "SKIPPED"
-                }
+            filter_status = "ERROR"
+
+        # 🛡️ Apply Keyword Safeguards (Override AI Score)
+        original_score = importance_score
+        importance_score = self._apply_keyword_safeguards(title, original_score)
         
-        is_relevant = filter_result.get('is_relevant', False)
-        importance_score = filter_result.get('importance_score', 0)
-        
-        # Override for personnel announcements
-        if is_personnel:
+        # If score was boosted, ensure it's marked as relevant
+        if importance_score > original_score:
             is_relevant = True
-            importance_score = max(importance_score, 5)  # Force to maximum
         
         # Build result
         result = {
             "is_relevant": is_relevant,
             "importance_score": importance_score,
-            "filter_status": "OK"
+            "filter_status": filter_status
         }
         
-        # Step 2: Analyst (only for important news OR personnel announcements)
-        if is_relevant and (importance_score >= self.importance_threshold or is_personnel):
+        # Step 2: Analyst (only for important news)
+        # Check if score is high enough (Threshold is usually 3)
+        if is_relevant and importance_score >= self.importance_threshold:
             logger.info(f"Proceeding to Tier 2 analysis (Score: {importance_score}): {title[:40]}...")
             
             analysis = self.analyze(title, full_content, agency_name)
             time.sleep(API_CALL_DELAY)  # Rate limit protection
             
             if analysis:
-                # Force HIGH risk level for personnel announcements
-                if is_personnel:
-                    analysis["risk_level"] = "High"
-                    analysis["risk_score"] = 5
-                    if "기타" not in analysis.get("risk_tags", []):
-                        analysis.setdefault("risk_tags", []).append("기타")
-                    analysis["is_personnel_announcement"] = True
-                
                 result.update(analysis)
                 result["analysis_status"] = "ANALYZED"
+                
+                # If safeguard boosted complexity, ensure risk_score matches
+                if result.get("risk_score", 0) < importance_score:
+                    result["risk_score"] = importance_score
+                    if importance_score >= 5:
+                        result["risk_level"] = "High"
+                    elif importance_score == 4:
+                         # Don't downgrade High to Medium, but upgrade Low to Medium
+                        if result.get("risk_level") == "Low":
+                            result["risk_level"] = "Medium"
+
                 logger.info(f"Analyzed successfully (Model: {self.analyzer_model}): {title[:40]}")
             else:
                 result["analysis_status"] = "ANALYSIS_FAILED"
