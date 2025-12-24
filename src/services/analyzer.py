@@ -11,8 +11,8 @@ import time
 import logging
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
 
 # Load env
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
@@ -40,22 +40,23 @@ class HybridAnalyzer:
         if not GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is not set in .env")
         
-        self.client = genai.Client(api_key=GEMINI_API_KEY)
+        genai.configure(api_key=GEMINI_API_KEY)
+        
         self.filter_model = MODEL_FILTER_ID
         self.analyzer_model = MODEL_ANALYZER_ID
         self.analyzer_fallback = MODEL_ANALYZER_FALLBACK
         self.importance_threshold = IMPORTANCE_THRESHOLD
         
-    def _call_api(self, model: str, prompt: str, max_retries: int = 3) -> Optional[str]:
+    def _call_api(self, model_name: str, prompt: str, max_retries: int = 3) -> Optional[str]:
         """Call Gemini API with retry logic."""
         base_delay = 10
+        model = genai.GenerativeModel(model_name)
         
         for attempt in range(max_retries):
             try:
-                response = self.client.models.generate_content(
-                    model=model,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
+                response = model.generate_content(
+                    prompt,
+                    generation_config=GenerationConfig(
                         response_mime_type="application/json"
                     )
                 )
@@ -71,11 +72,14 @@ class HybridAnalyzer:
                     logger.warning(f"Rate Limit hit. Retrying in {delay}s... (Attempt {attempt+1}/{max_retries})")
                     time.sleep(delay)
                 elif "404" in error_str or "NOT_FOUND" in error_str:
-                    logger.error(f"Model {model} not found")
+                    logger.error(f"Model {model_name} not found")
+                    # Fallback instantly if model name is wrong
                     return None
                 else:
-                    logger.error(f"API Error: {error_str[:200]}")
-                    return None
+                    logger.error(f"API Error ({model_name}): {error_str[:200]}")
+                    # If it's a critical error, maybe don't retry immediately or handle differently
+                    # But for now, we try/catch loop
+                    time.sleep(5)
         
         logger.error("Failed after max retries")
         return None
