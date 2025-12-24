@@ -348,11 +348,9 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                                 </span>
                             ))}
                             {/* Grade */}
-                            {risk !== 'Low' && (
-                                <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getRiskColor(risk)}`}>
-                                    {risk}
-                                </div>
-                            )}
+                            <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getRiskColor(risk)}`}>
+                                {risk}
+                            </div>
                         </div>
                     </div>
 
