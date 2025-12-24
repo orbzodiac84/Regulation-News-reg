@@ -391,9 +391,8 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                             <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375h-2.169c.86.671 1.419 1.71 1.419 2.89 0 2.002-1.624 3.625-3.625 3.625a3.618 3.618 0 0 0-.75-.078v4.938c0 .621.504 1.125 1.125 1.125H9.75a1.125 1.125 0 0 1 1.125 1.125v1.5a3.375 3.375 0 0 0 3.375 3.375h2.17c-.861-.672-1.42-1.711-1.42-2.891 0-2.002 1.623-3.625 3.625-3.625.255 0 .502.027.749.079Z" />
                         </svg>
                     </div>
-                    <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 truncate">
-                        <span className="inline sm:hidden">Reg. Insights</span>
-                        <span className="hidden sm:inline">Financial Regulatory Insights</span>
+                    <h1 className="hidden sm:block text-lg font-bold tracking-tight text-slate-900 truncate">
+                        Financial Regulatory Insights
                     </h1>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-2">
