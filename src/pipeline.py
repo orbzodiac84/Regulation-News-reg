@@ -47,8 +47,10 @@ class Pipeline:
         try:
             from src.db.client import supabase
             return supabase
-        except Exception:
-            logger.error("Supabase client not available.")
+        except Exception as e:
+            logger.error(f"Supabase client not available: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return None
 
     def _get_last_crawled_date(self, agency_id):
