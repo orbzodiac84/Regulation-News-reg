@@ -1,4 +1,5 @@
 'use client'
+// Dashboard Component Version 2.0 - Auto Refresh Enabled
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
