@@ -258,9 +258,24 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
             const risk = article.analysis_result?.risk_level || 'Low'
             const hasAnalysis = article.analysis_result && article.analysis_result.summary && article.analysis_result.summary.length > 0
 
+            const score = article.analysis_result?.importance_score || 0
+
             if (!hasAnalysis) return false
-            if (risk === 'Low' && selectedRisk !== 'Low') return false
-            if (selectedRisk !== 'All' && risk.toUpperCase() !== selectedRisk.toUpperCase()) return false
+
+            // Refined Logic for 'Low' Risk visibility
+            if (risk === 'Low') {
+                if (selectedRisk === 'Low') return true // Show all if specifically selected
+                if (selectedRisk === 'All') {
+                    // In 'Every Level' view, only show Low risk items if they are important (Score >= 4)
+                    // This creates a "Smart Filter" effect
+                    if (score < 4) return false
+                } else {
+                    return false // Hide Low if High/Medium is selected
+                }
+            } else {
+                // For High/Medium, follow standard filter
+                if (selectedRisk !== 'All' && risk.toUpperCase() !== selectedRisk.toUpperCase()) return false
+            }
 
             return true
         })
