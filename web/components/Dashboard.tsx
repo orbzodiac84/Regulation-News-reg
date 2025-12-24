@@ -110,7 +110,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
             const data = await response.json()
 
             if (response.ok) {
-                setCollectMessage({ type: 'success', text: '데이터 수집을 시작했습니다. 완료 시 자동으로 대시보드가 갱신됩니다...' })
+                setCollectMessage({ type: 'success', text: '잠시 기다려주세요.' })
 
                 // --- Start Polling for Status ---
                 let pollInterval = setInterval(async () => {
@@ -123,7 +123,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                             setIsCollecting(false)
                             setCollectMessage({
                                 type: statusData.conclusion === 'success' ? 'success' : 'error',
-                                text: statusData.conclusion === 'success' ? '데이터 수집 및 분석이 완료되었습니다!' : '데이터 수집 중 오류가 발생했습니다.'
+                                text: statusData.conclusion === 'success' ? '수집이 완료되었습니다.' : '수집 중 오류가 발생했습니다.'
                             })
 
                             // Refresh data
@@ -414,7 +414,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                <span className="hidden sm:inline">수집 중...</span>
+                                <span className="hidden sm:inline">기다려주세요...</span>
                             </>
                         ) : (
                             <>
