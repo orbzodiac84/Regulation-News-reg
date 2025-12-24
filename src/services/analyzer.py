@@ -223,16 +223,16 @@ class HybridAnalyzer:
     def _is_personnel_announcement(self, title: str, agency_name: str) -> bool:
         """
         Check if the article is a personnel announcement from key agencies.
-        Personnel announcements from FSS, FSC, MOEF are always HIGH importance.
+        Personnel announcements from any agency are HIGH importance.
         """
-        # Key agencies for personnel importance
-        key_agencies = ['금융감독원', '금융위원회', '기획재정부', 'FSS', 'FSC', 'MOEF']
+        # Key agencies - ALL agencies we track
+        key_agencies = ['금융감독원', '금융위원회', '기획재정부', '한국은행', 'FSS', 'FSC', 'MOEF', 'BOK']
         
-        # Personnel-related keywords
+        # Personnel-related keywords (expanded)
         personnel_keywords = [
             '인사', '인사발령', '인사이동', '임명', '취임', '발령', 
-            '부원장', '원장', '국장', '실장', '부장', '팀장', '부서장',
-            '승진', '전보', '보직', '개편', '조직개편'
+            '임원', '임원 인사', '부원장', '원장', '국장', '실장', '부장', '팀장', '부서장',
+            '승진', '전보', '보직', '개편', '조직개편', '조직 개편'
         ]
         
         # Check if agency is relevant
