@@ -24,6 +24,13 @@ interface AnalysisResult {
     risk_tags?: string[]
 }
 
+// --- Helper: Derive Risk from Score ---
+const getDerivedRisk = (score: number): 'High' | 'Medium' | 'Low' => {
+    if (score >= 5) return 'High'
+    if (score === 4) return 'Medium'
+    return 'Low' // 1, 2, 3
+}
+
 // --- Icons ---
 const Icons = {
     Home: () => (
@@ -255,27 +262,20 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         .filter(article => {
             if (selectedAgency !== 'All' && article.agency !== selectedAgency) return false
 
-            const risk = article.analysis_result?.risk_level || 'Low'
-            const hasAnalysis = article.analysis_result && article.analysis_result.summary && article.analysis_result.summary.length > 0
-
             const score = article.analysis_result?.importance_score || 0
 
+            // 1. Hide irrelevant articles (Score 1-2)
+            if (score < 3) return false
+
+            const hasAnalysis = article.analysis_result && article.analysis_result.summary && article.analysis_result.summary.length > 0
             if (!hasAnalysis) return false
 
-            // Refined Logic for 'Low' Risk visibility
-            if (risk === 'Low') {
-                if (selectedRisk === 'Low') return true // Show all if specifically selected
-                if (selectedRisk === 'All') {
-                    // In 'Every Level' view, only show Low risk items if they are important (Score >= 4)
-                    // This creates a "Smart Filter" effect
-                    if (score < 4) return false
-                } else {
-                    return false // Hide Low if High/Medium is selected
-                }
-            } else {
-                // For High/Medium, follow standard filter
-                if (selectedRisk !== 'All' && risk.toUpperCase() !== selectedRisk.toUpperCase()) return false
-            }
+            // 2. Determine Risk based on Score (User Definition)
+            // 3 = Low, 4 = Medium, 5 = High
+            const risk = getDerivedRisk(score)
+
+            // 3. Filter by Selected Risk
+            if (selectedRisk !== 'All' && risk.toUpperCase() !== selectedRisk.toUpperCase()) return false
 
             return true
         })
@@ -315,7 +315,9 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
     // 1. Article Card (Reused in both views)
     const ArticleCard = ({ article }: { article: Article }) => {
         const analysis = article.analysis_result
-        const risk = analysis?.risk_level || 'Low'
+        const score = analysis?.importance_score || 0
+        // Use Derived Risk based on Score (3=Low, 4=Med, 5=High)
+        const risk = getDerivedRisk(score)
 
         return (
             <div className="group relative bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-sky-200 hover:shadow-md hover:shadow-sky-100/50 transition-all duration-300 mb-6 last:mb-0">
@@ -651,11 +653,10 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                                                 {isExpanded && (
                                                     <div className="divide-y divide-slate-100 bg-slate-50/30">
                                                         {dateArticles.sort((a, b) => {
-                                                            // 1. Risk Level (High > Medium > Low)
-                                                            const riskOrder: { [key: string]: number } = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
-                                                            const riskA = riskOrder[a.analysis_result?.risk_level?.toUpperCase() || 'LOW'] || 0
-                                                            const riskB = riskOrder[b.analysis_result?.risk_level?.toUpperCase() || 'LOW'] || 0
-                                                            if (riskA !== riskB) return riskB - riskA // Descending
+                                                            // 1. Sort by Importance Score (High > Low)
+                                                            const scoreA = a.analysis_result?.importance_score || 0
+                                                            const scoreB = b.analysis_result?.importance_score || 0
+                                                            if (scoreA !== scoreB) return scoreB - scoreA // Descending
 
                                                             // 2. Agency Priority (FSS > FSC > MOEF > BOK)
                                                             const agencyOrder: { [key: string]: number } = { 'FSS': 1, 'FSC': 2, 'MOEF': 3, 'BOK': 4 }
