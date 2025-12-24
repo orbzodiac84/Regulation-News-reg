@@ -204,9 +204,14 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         setLoading(false)
     }
 
-    // Helper Functions
-    const formatDate = (dateStr: string) => {
+    // Helper Functions (KST = UTC + 9 hours)
+    const toKST = (dateStr: string) => {
         const date = new Date(dateStr)
+        return new Date(date.getTime() + 9 * 60 * 60 * 1000)
+    }
+
+    const formatDate = (dateStr: string) => {
+        const date = toKST(dateStr)
         const month = date.getUTCMonth() + 1
         const day = date.getUTCDate()
         const hour = date.getUTCHours()
@@ -219,7 +224,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
     }
 
     const getDateDateString = (dateStr: string) => {
-        const date = new Date(dateStr)
+        const date = toKST(dateStr)
         const year = date.getUTCFullYear()
         const month = date.getUTCMonth() + 1
         const day = date.getUTCDate()
