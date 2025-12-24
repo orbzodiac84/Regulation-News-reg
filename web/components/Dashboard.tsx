@@ -104,57 +104,47 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         setCollectMessage(null)
 
         try {
-            const response = await fetch('/api/trigger-collect', {
-                method: 'POST',
-            })
-
+            const response = await fetch('/api/trigger-collect', { method: 'POST' })
             const data = await response.json()
 
-            if (response.ok) {
-                setCollectMessage({ type: 'success', text: '잠시 기다려주세요.' })
-
-                // --- Start Polling for Status ---
-                let pollInterval = setInterval(async () => {
-                    try {
-                        const statusRes = await fetch('/api/check-collection-status')
-                        const statusData = await statusRes.json()
-
-                        if (statusData.status === 'completed') {
-                            clearInterval(pollInterval)
-                            setIsCollecting(false)
-                            setCollectMessage({
-                                type: statusData.conclusion === 'success' ? 'success' : 'error',
-                                text: statusData.conclusion === 'success' ? '수집이 완료되었습니다.' : '수집 중 오류가 발생했습니다.'
-                            })
-
-                            // Refresh data
-                            fetchArticles(selectedAgency)
-
-                            // Hide message after 3 seconds
-                            setTimeout(() => setCollectMessage(null), 3000)
-                        }
-                    } catch (e) {
-                        console.error('Polling error:', e)
-                    }
-                }, 5000) // Poll every 5 seconds
-
-                // Safety timeout: stop polling after 3 minutes and reset UI
-                setTimeout(() => {
-                    clearInterval(pollInterval)
-                    setIsCollecting(false)
-                    // If still showing "waiting" message, assume success and refresh
-                    fetchArticles(selectedAgency)
-                    setCollectMessage({ type: 'success', text: '수집이 완료되었습니다.' })
-                    setTimeout(() => setCollectMessage(null), 3000)
-                }, 180000)
-
-            } else {
+            if (!response.ok) {
                 setCollectMessage({ type: 'error', text: data.error || '수집 요청 실패' })
                 setIsCollecting(false)
+                return
             }
+
+            setCollectMessage({ type: 'success', text: '수집 중...' })
+
+            // Poll every 5 seconds until completed
+            const checkStatus = async () => {
+                try {
+                    const res = await fetch('/api/check-collection-status')
+                    const status = await res.json()
+
+                    if (status.status === 'completed') {
+                        setIsCollecting(false)
+                        fetchArticles(selectedAgency)
+                        if (status.conclusion === 'success') {
+                            setCollectMessage({ type: 'success', text: '수집이 완료되었습니다!' })
+                        } else {
+                            setCollectMessage({ type: 'error', text: '수집 중 오류 발생' })
+                        }
+                        setTimeout(() => setCollectMessage(null), 3000)
+                    } else {
+                        // Still running, check again in 5 seconds
+                        setTimeout(checkStatus, 5000)
+                    }
+                } catch (e) {
+                    // On error, retry after 5 seconds
+                    setTimeout(checkStatus, 5000)
+                }
+            }
+
+            // Start checking after 10 seconds (give it time to start)
+            setTimeout(checkStatus, 10000)
+
         } catch (error) {
-            console.error('Collect error:', error)
-            setCollectMessage({ type: 'error', text: '네트워크 오류가 발생했습니다.' })
+            setCollectMessage({ type: 'error', text: '네트워크 오류' })
             setIsCollecting(false)
         }
     }
