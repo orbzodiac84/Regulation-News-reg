@@ -7,12 +7,21 @@ from datetime import datetime, timedelta
 import logging
 from config import settings
 
+import urllib3
+
+# Suppress InsecureRequestWarning for verify=False
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 logger = logging.getLogger(__name__)
 
 class ContentScraper:
     def __init__(self):
+        # Use a very standard Chrome User-Agent
         self.headers = {
-            'User-Agent': settings.USER_AGENT
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Connection': 'keep-alive'
         }
 
     def fetch_content(self, url: str, agency_config: Dict) -> Optional[str]:
@@ -37,7 +46,7 @@ class ContentScraper:
             # Random delay
             time.sleep(random.uniform(settings.SCRAPER_RETRY_DELAY_MIN, settings.SCRAPER_RETRY_DELAY_MAX))
             
-            response = requests.get(url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT)
+            response = requests.get(url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=False)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
