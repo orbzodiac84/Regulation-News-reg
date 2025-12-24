@@ -1,0 +1,346 @@
+
+[https://www.bok.or.kr/portal/bbs/B0000245/list.do?menuNo=200129] No rows found with selector: ul.b_list li
+<!DOCTYPE html>
+<html lang="ko">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   | (목록) |  한국은행 홈페이지
+  </title>
+  <meta content="IE=edge" http-equiv="X-UA-Compatible">
+   <meta content="" property="title">
+    <meta content="한국은행" property="main"/>
+    <meta content="" property="creator"/>
+    <meta content="한국은행" property="publisher"/>
+    <meta content=" | (목록) |  한국은행 홈페이지" property="subject"/>
+    <meta content="" property="keyword"/>
+    <meta content="" property="description"/>
+    <link href="https://static-cdn.bok.or.kr/static/commons/bok.ico" rel="icon" type="image/x-icon"/>
+    <link href="https://static-cdn.bok.or.kr/static/portal/css/sub.css" rel="stylesheet"/>
+    <script src="https://static-cdn.bok.or.kr/static/jslibrary/jquery-3.5.1.min.js">
+    </script>
+    <script src="https://static-cdn.bok.or.kr/static/jslibrary/bootstrap/bootstrap.min.js">
+    </script>
+    <script src="https://static-cdn.bok.or.kr/static/jslibrary/bootstrap-datepicker-1.9.0-dist/js/bootstrap-datepicker.min.js">
+    </script>
+    <script src="https://static-cdn.bok.or.kr/static/jslibrary/typeahead.bundle.js">
+    </script>
+    <link href="https://static-cdn.bok.or.kr/static/jslibrary/swiper@8/swiper-bundle.min.css" rel="stylesheet"/>
+   </meta>
+  </meta>
+ </head>
+ <body>
+  <ul class="skip">
+   <li>
+    <a href="#content">
+     본문내용 바로가기
+    </a>
+   </li>
+   <li>
+    <a href="#gnb">
+     주메뉴 바로가기
+    </a>
+   </li>
+  </ul>
+  <!-- <div id="bgW"></div>
+<div id="bgW2"></div>
+<div class="bg_Allmenu"></div> -->
+  <!-- <div class="wrapSet"> -->
+  <div id="wrap">
+   <script src="https://static-cdn.bok.or.kr/static/search/search.js">
+   </script>
+   <script src="https://static-cdn.bok.or.kr/static/jslibrary/swiper@8/swiper-bundle.min.js">
+   </script>
+   <link href="https://static-cdn.bok.or.kr/static/jslibrary/swiper@8/swiper-bundle.min.css" rel="stylesheet"/>
+   <!-- header -->
+   <header class="family" id="header">
+    <div class="globalHeader">
+     <div class="container">
+      <ul>
+       <!-- <li>
+						<a href="/portal/main/main.do" target="_blank" title="새창열림">한국은행</a>
+					</li> -->
+       <li>
+        <a href="/imer/main/main.do" target="_blank" title="새창열림">
+         경제연구원
+        </a>
+       </li>
+       <li>
+        <a href="/museum/main/main.do" target="_blank" title="새창열림">
+         화폐박물관
+        </a>
+       </li>
+       <li>
+        <a href="/portal/submain/submain/rgHqt.do?menuNo=200219">
+         지역본부
+        </a>
+       </li>
+       <li>
+        <a href="https://ecos.bok.or.kr/#/?langCd=kor" target="_blank" title="새창열림">
+         경제통계시스템(ECOS)
+        </a>
+       </li>
+       <li>
+        <a href="https://snapshot.bok.or.kr/?lang=ko" target="_blank" title="새창열림">
+         금융·경제 스냅샷
+        </a>
+       </li>
+       <li>
+        <a href="https://dl.bok.or.kr" target="_blank" title="새창열림">
+         전자도서관
+        </a>
+       </li>
+       <li>
+        <a href="https://archives.bok.or.kr" target="_blank" title="새창열림">
+         디지털아카이브
+        </a>
+       </li>
+       <li>
+        <a href="https://apply.bok.or.kr" target="_blank" title="새창열림">
+         채용
+        </a>
+       </li>
+       <li>
+        <a href="https://ebid.bok.or.kr" target="_blank" title="새창열림">
+         전자계약시스템
+        </a>
+       </li>
+      </ul>
+      <div class="m-globalHeader">
+       <div class="site_go">
+        <button title="Family site 열기" type="button">
+         관련사이트 바로가기
+        </button>
+        <ul>
+         <li>
+          <a href="/portal/main/main.do" target="_blank" title="새창열림">
+           한국은행
+          </a>
+         </li>
+         <li>
+          <a href="/museum/main/main.do" target="_blank" title="새창열림">
+           화폐박물관
+          </a>
+         </li>
+         <li>
+          <a href="/imer/main/main.do" target="_blank" title="새창열림">
+           경제연구원
+          </a>
+         </li>
+         <li>
+          <a href="/portal/submain/submain/rgHqt.do?menuNo=200219">
+           지역본부
+          </a>
+         </li>
+         <li>
+          <a href="https://ecos.bok.or.kr/#/?langCd=kor" target="_blank" title="새창열림">
+           경제통계시스템(ECOS)
+          </a>
+         </li>
+         <li>
+          <a href="https://snapshot.bok.or.kr/?lang=ko" target="_blank" title="새창열림">
+           금융·경제 스냅샷
+          </a>
+         </li>
+         <li>
+          <a href="https://dl.bok.or.kr" target="_blank" title="새창열림">
+           전자도서관
+          </a>
+         </li>
+         <li>
+          <a href="https://archives.bok.or.kr" target="_blank" title="새창열림">
+           디지털아카이브
+          </a>
+         </li>
+         <li>
+          <a href="https://apply.bok.or.kr" target="_blank" title="새창열림">
+           채용
+          </a>
+         </li>
+         <li>
+          <a href="https://ebid.bok.or.kr" target="_blank" title="새창열림">
+           전자계약시스템
+          </a>
+         </li>
+        </ul>
+       </div>
+      </div>
+      <!-- 본인인증 -->
+      <div class="g-info">
+       <div class="global">
+        <u
+==================================================
+
+[https://www.bok.or.kr/portal/bbs/B0000245/list.do?menuNo=200129] No rows found with selector: ul.b_list li
+<!DOCTYPE html>
+<html lang="ko">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   | (목록) |  한국은행 홈페이지
+  </title>
+  <meta content="IE=edge" http-equiv="X-UA-Compatible">
+   <meta content="" property="title">
+    <meta content="한국은행" property="main"/>
+    <meta content="" property="creator"/>
+    <meta content="한국은행" property="publisher"/>
+    <meta content=" | (목록) |  한국은행 홈페이지" property="subject"/>
+    <meta content="" property="keyword"/>
+    <meta content="" property="description"/>
+    <link href="https://static-cdn.bok.or.kr/static/commons/bok.ico" rel="icon" type="image/x-icon"/>
+    <link href="https://static-cdn.bok.or.kr/static/portal/css/sub.css" rel="stylesheet"/>
+    <script src="https://static-cdn.bok.or.kr/static/jslibrary/jquery-3.5.1.min.js">
+    </script>
+    <script src="https://static-cdn.bok.or.kr/static/jslibrary/bootstrap/bootstrap.min.js">
+    </script>
+    <script src="https://static-cdn.bok.or.kr/static/jslibrary/bootstrap-datepicker-1.9.0-dist/js/bootstrap-datepicker.min.js">
+    </script>
+    <script src="https://static-cdn.bok.or.kr/static/jslibrary/typeahead.bundle.js">
+    </script>
+    <link href="https://static-cdn.bok.or.kr/static/jslibrary/swiper@8/swiper-bundle.min.css" rel="stylesheet"/>
+   </meta>
+  </meta>
+ </head>
+ <body>
+  <ul class="skip">
+   <li>
+    <a href="#content">
+     본문내용 바로가기
+    </a>
+   </li>
+   <li>
+    <a href="#gnb">
+     주메뉴 바로가기
+    </a>
+   </li>
+  </ul>
+  <!-- <div id="bgW"></div>
+<div id="bgW2"></div>
+<div class="bg_Allmenu"></div> -->
+  <!-- <div class="wrapSet"> -->
+  <div id="wrap">
+   <script src="https://static-cdn.bok.or.kr/static/search/search.js">
+   </script>
+   <script src="https://static-cdn.bok.or.kr/static/jslibrary/swiper@8/swiper-bundle.min.js">
+   </script>
+   <link href="https://static-cdn.bok.or.kr/static/jslibrary/swiper@8/swiper-bundle.min.css" rel="stylesheet"/>
+   <!-- header -->
+   <header class="family" id="header">
+    <div class="globalHeader">
+     <div class="container">
+      <ul>
+       <!-- <li>
+						<a href="/portal/main/main.do" target="_blank" title="새창열림">한국은행</a>
+					</li> -->
+       <li>
+        <a href="/imer/main/main.do" target="_blank" title="새창열림">
+         경제연구원
+        </a>
+       </li>
+       <li>
+        <a href="/museum/main/main.do" target="_blank" title="새창열림">
+         화폐박물관
+        </a>
+       </li>
+       <li>
+        <a href="/portal/submain/submain/rgHqt.do?menuNo=200219">
+         지역본부
+        </a>
+       </li>
+       <li>
+        <a href="https://ecos.bok.or.kr/#/?langCd=kor" target="_blank" title="새창열림">
+         경제통계시스템(ECOS)
+        </a>
+       </li>
+       <li>
+        <a href="https://snapshot.bok.or.kr/?lang=ko" target="_blank" title="새창열림">
+         금융·경제 스냅샷
+        </a>
+       </li>
+       <li>
+        <a href="https://dl.bok.or.kr" target="_blank" title="새창열림">
+         전자도서관
+        </a>
+       </li>
+       <li>
+        <a href="https://archives.bok.or.kr" target="_blank" title="새창열림">
+         디지털아카이브
+        </a>
+       </li>
+       <li>
+        <a href="https://apply.bok.or.kr" target="_blank" title="새창열림">
+         채용
+        </a>
+       </li>
+       <li>
+        <a href="https://ebid.bok.or.kr" target="_blank" title="새창열림">
+         전자계약시스템
+        </a>
+       </li>
+      </ul>
+      <div class="m-globalHeader">
+       <div class="site_go">
+        <button title="Family site 열기" type="button">
+         관련사이트 바로가기
+        </button>
+        <ul>
+         <li>
+          <a href="/portal/main/main.do" target="_blank" title="새창열림">
+           한국은행
+          </a>
+         </li>
+         <li>
+          <a href="/museum/main/main.do" target="_blank" title="새창열림">
+           화폐박물관
+          </a>
+         </li>
+         <li>
+          <a href="/imer/main/main.do" target="_blank" title="새창열림">
+           경제연구원
+          </a>
+         </li>
+         <li>
+          <a href="/portal/submain/submain/rgHqt.do?menuNo=200219">
+           지역본부
+          </a>
+         </li>
+         <li>
+          <a href="https://ecos.bok.or.kr/#/?langCd=kor" target="_blank" title="새창열림">
+           경제통계시스템(ECOS)
+          </a>
+         </li>
+         <li>
+          <a href="https://snapshot.bok.or.kr/?lang=ko" target="_blank" title="새창열림">
+           금융·경제 스냅샷
+          </a>
+         </li>
+         <li>
+          <a href="https://dl.bok.or.kr" target="_blank" title="새창열림">
+           전자도서관
+          </a>
+         </li>
+         <li>
+          <a href="https://archives.bok.or.kr" target="_blank" title="새창열림">
+           디지털아카이브
+          </a>
+         </li>
+         <li>
+          <a href="https://apply.bok.or.kr" target="_blank" title="새창열림">
+           채용
+          </a>
+         </li>
+         <li>
+          <a href="https://ebid.bok.or.kr" target="_blank" title="새창열림">
+           전자계약시스템
+          </a>
+         </li>
+        </ul>
+       </div>
+      </div>
+      <!-- 본인인증 -->
+      <div class="g-info">
+       <div class="global">
+        <u
+==================================================
