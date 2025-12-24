@@ -8,25 +8,39 @@ export async function GET() {
             return NextResponse.json({ error: 'GitHub token not configured' }, { status: 500 })
         }
 
-        // Get the latest run of the specific workflow
+        // Get recent runs (check for in_progress first)
         const response = await fetch(
-            'https://api.github.com/repos/orbzodiac84/Regulation-News-reg/actions/workflows/news_collector.yml/runs?per_page=1',
+            'https://api.github.com/repos/orbzodiac84/Regulation-News-reg/actions/workflows/news_collector.yml/runs?per_page=5',
             {
                 headers: {
                     'Accept': 'application/vnd.github.v3+json',
                     'Authorization': `Bearer ${githubToken}`,
                 },
-                next: { revalidate: 0 } // Disable caching
+                cache: 'no-store'
             }
         )
 
         const data = await response.json()
 
         if (data.workflow_runs && data.workflow_runs.length > 0) {
+            // First, check if any run is in_progress or queued
+            const inProgressRun = data.workflow_runs.find(
+                (run: any) => run.status === 'in_progress' || run.status === 'queued'
+            )
+
+            if (inProgressRun) {
+                return NextResponse.json({
+                    status: inProgressRun.status, // in_progress or queued
+                    conclusion: null,
+                    url: inProgressRun.html_url
+                })
+            }
+
+            // No in-progress runs, return the latest completed
             const latestRun = data.workflow_runs[0]
             return NextResponse.json({
-                status: latestRun.status, // in_progress, completed, queued
-                conclusion: latestRun.conclusion, // success, failure, neutral, cancelled, skipped, timed_out, action_required
+                status: latestRun.status,
+                conclusion: latestRun.conclusion,
                 url: latestRun.html_url
             })
         }
