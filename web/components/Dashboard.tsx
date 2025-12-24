@@ -110,19 +110,43 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
             const data = await response.json()
 
             if (response.ok) {
-                setCollectMessage({ type: 'success', text: '데이터 수집이 시작되었습니다! 잠시 후 새로고침 해주세요.' })
-                // Auto-refresh after 10 seconds
-                setTimeout(() => {
-                    fetchArticles(selectedAgency)
-                    setCollectMessage(null)
-                }, 10000)
+                setCollectMessage({ type: 'success', text: '데이터 수집을 시작했습니다. 완료 시 자동으로 대시보드가 갱신됩니다...' })
+
+                // --- Start Polling for Status ---
+                let pollInterval = setInterval(async () => {
+                    try {
+                        const statusRes = await fetch('/api/check-collection-status')
+                        const statusData = await statusRes.json()
+
+                        if (statusData.status === 'completed') {
+                            clearInterval(pollInterval)
+                            setIsCollecting(false)
+                            setCollectMessage({
+                                type: statusData.conclusion === 'success' ? 'success' : 'error',
+                                text: statusData.conclusion === 'success' ? '데이터 수집 및 분석이 완료되었습니다!' : '데이터 수집 중 오류가 발생했습니다.'
+                            })
+
+                            // Refresh data
+                            fetchArticles(selectedAgency)
+
+                            // Hide message after 3 seconds
+                            setTimeout(() => setCollectMessage(null), 3000)
+                        }
+                    } catch (e) {
+                        console.error('Polling error:', e)
+                    }
+                }, 5000) // Poll every 5 seconds
+
+                // Safety timeout: stop polling after 5 minutes
+                setTimeout(() => clearInterval(pollInterval), 300000)
+
             } else {
                 setCollectMessage({ type: 'error', text: data.error || '수집 요청 실패' })
+                setIsCollecting(false)
             }
         } catch (error) {
             console.error('Collect error:', error)
             setCollectMessage({ type: 'error', text: '네트워크 오류가 발생했습니다.' })
-        } finally {
             setIsCollecting(false)
         }
     }
@@ -379,8 +403,8 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                         onClick={triggerCollect}
                         disabled={isCollecting}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${isCollecting
-                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-200 hover:shadow-md transform hover:-translate-y-0.5'
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-200 hover:shadow-md transform hover:-translate-y-0.5'
                             }`}
                         title="수동으로 최신 데이터 수집"
                     >
@@ -410,8 +434,8 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
             {/* Collect Message Toast */}
             {collectMessage && (
                 <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg font-medium text-sm transition-all duration-300 ${collectMessage.type === 'success'
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-red-500 text-white'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-red-500 text-white'
                     }`}>
                     {collectMessage.text}
                     <button
