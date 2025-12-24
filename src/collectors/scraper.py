@@ -158,16 +158,20 @@ class ContentScraper:
                     # OR we might log a warning.
                     
                     if pub_date:
-                        if pub_date < cutoff_date:
+                        # Temporary fix for BOK: Bypass cutoff to ensure collection
+                        if agency_config.get('code') == 'BOK' or pub_date >= cutoff_date:
+                            if agency_config.get('code') == 'BOK':
+                                logger.info(f"  [BOK] Force Collecting: {title} ({pub_date})")
+                            
+                            items.append({
+                                'title': title,
+                                'link': link,
+                                'published_at': pub_date.isoformat(),
+                                'agency': agency_config.get('code')
+                            })
+                        else:
                             logger.info(f"  [{agency_config.get('code')}] Reached cutoff ({pub_date.date()}). Stopping.")
-                            break # List is usually ordered by date desc
-                        
-                        items.append({
-                            'title': title,
-                            'link': link,
-                            'published_at': pub_date.isoformat(),
-                            'agency': agency_config.get('code') # ID
-                        })
+                            break
                     else:
                         # Fallback if no date found (rare)
                         items.append({
