@@ -267,19 +267,22 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         .filter(article => {
             if (selectedAgency !== 'All' && article.agency !== selectedAgency) return false
 
-            const score = article.analysis_result?.importance_score || 0
+            const rawScore = article.analysis_result?.importance_score
+            const score = typeof rawScore === 'number' ? rawScore : null
 
-            // 1. Hide irrelevant articles (Score 1-2)
-            if (score < 3) return false
+            // 1. Only hide if score is explicitly 1 or 2 (noise)
+            // If score is null/undefined (not analyzed) or 3+, show it
+            if (score !== null && score < 3) return false
 
+            // 2. Check if has analysis content for display purposes
             const hasAnalysis = article.analysis_result && article.analysis_result.summary && article.analysis_result.summary.length > 0
-            if (!hasAnalysis) return false
 
-            // 2. Determine Risk based on Score (User Definition)
-            // 3 = Low, 4 = Medium, 5 = High
-            const risk = getDerivedRisk(score)
+            // 3. Determine Risk based on Score (User Definition)
+            // 3 = Low, 4 = Medium, 5 = High, null/0 = Low (default)
+            const displayScore = score ?? 3 // Default to 3 (Low) if no score
+            const risk = getDerivedRisk(displayScore)
 
-            // 3. Filter by Selected Risk
+            // 4. Filter by Selected Risk
             if (selectedRisk !== 'All' && risk.toUpperCase() !== selectedRisk.toUpperCase()) return false
 
             return true
