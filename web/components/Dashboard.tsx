@@ -393,16 +393,16 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                             <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375h-2.169c.86.671 1.419 1.71 1.419 2.89 0 2.002-1.624 3.625-3.625 3.625a3.618 3.618 0 0 0-.75-.078v4.938c0 .621.504 1.125 1.125 1.125H9.75a1.125 1.125 0 0 1 1.125 1.125v1.5a3.375 3.375 0 0 0 3.375 3.375h2.17c-.861-.672-1.42-1.711-1.42-2.891 0-2.002 1.623-3.625 3.625-3.625.255 0 .502.027.749.079Z" />
                         </svg>
                     </div>
-                    <h1 className="text-lg font-bold tracking-tight text-slate-900">
-                        Financial Regulatory Insights
+                    <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+                        <span className="hidden xs:inline">Financial </span>Regulatory<span className="hidden sm:inline"> Insights</span>
                     </h1>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     {/* Data Collect Button */}
                     <button
                         onClick={triggerCollect}
                         disabled={isCollecting}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${isCollecting
+                        className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 ${isCollecting
                             ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                             : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-200 hover:shadow-md transform hover:-translate-y-0.5'
                             }`}
@@ -410,16 +410,16 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                     >
                         {isCollecting ? (
                             <>
-                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                <span className="hidden sm:inline">기다려주세요...</span>
+                                <span className="inline">기다려주세요...</span>
                             </>
                         ) : (
                             <>
                                 <Icons.Play />
-                                <span className="hidden sm:inline">데이터 수집</span>
+                                <span className="inline">수집하기</span>
                             </>
                         )}
                     </button>
