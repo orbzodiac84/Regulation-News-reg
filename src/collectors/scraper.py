@@ -10,7 +10,8 @@ from config import settings
 import urllib3
 
 # Suppress InsecureRequestWarning for verify=False
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+if settings.SUPPRESS_SSL_WARNINGS:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class ContentScraper:
             # Random delay
             time.sleep(random.uniform(settings.SCRAPER_RETRY_DELAY_MIN, settings.SCRAPER_RETRY_DELAY_MAX))
             
-            response = requests.get(url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=False)
+            response = requests.get(url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=settings.SSL_VERIFY)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -107,7 +108,7 @@ class ContentScraper:
         items = []
         try:
             time.sleep(random.uniform(settings.SCRAPER_RETRY_DELAY_MIN, settings.SCRAPER_RETRY_DELAY_MAX)) # Anti-ban delay
-            response = requests.get(source_url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=False)
+            response = requests.get(source_url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=settings.SSL_VERIFY)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -158,19 +159,22 @@ class ContentScraper:
                     # OR we might log a warning.
                     
                     if pub_date:
-                        # Temporary fix for BOK: Bypass cutoff to ensure collection
-                        if agency_config.get('code') == 'BOK' or pub_date >= cutoff_date:
-                            if agency_config.get('code') == 'BOK':
-                                logger.info(f"  [BOK] Force Collecting: {title} ({pub_date})")
+                        # Check Force Collect policy from settings
+                        agency_code = agency_config.get('code')
+                        force_collect = agency_code in settings.FORCE_COLLECT_AGENCIES
+                        
+                        if force_collect or pub_date >= cutoff_date:
+                            if force_collect:
+                                logger.info(f"  [{agency_code}] Force Collecting (Policy): {title} ({pub_date})")
                             
                             items.append({
                                 'title': title,
                                 'link': link,
                                 'published_at': pub_date.isoformat(),
-                                'agency': agency_config.get('code')
+                                'agency': agency_code
                             })
                         else:
-                            logger.info(f"  [{agency_config.get('code')}] Reached cutoff ({pub_date.date()}). Stopping.")
+                            logger.info(f"  [{agency_code}] Reached cutoff ({pub_date.date()}). Stopping.")
                             break
                     else:
                         # Fallback if no date found (rare)
