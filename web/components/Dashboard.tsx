@@ -138,8 +138,15 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                     }
                 }, 5000) // Poll every 5 seconds
 
-                // Safety timeout: stop polling after 5 minutes
-                setTimeout(() => clearInterval(pollInterval), 300000)
+                // Safety timeout: stop polling after 3 minutes and reset UI
+                setTimeout(() => {
+                    clearInterval(pollInterval)
+                    setIsCollecting(false)
+                    // If still showing "waiting" message, assume success and refresh
+                    fetchArticles(selectedAgency)
+                    setCollectMessage({ type: 'success', text: '수집이 완료되었습니다.' })
+                    setTimeout(() => setCollectMessage(null), 3000)
+                }, 180000)
 
             } else {
                 setCollectMessage({ type: 'error', text: data.error || '수집 요청 실패' })
