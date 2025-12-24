@@ -216,6 +216,29 @@ class HybridAnalyzer:
                 return None
         return None
 
+    def _is_personnel_announcement(self, title: str, agency_name: str) -> bool:
+        """
+        Check if the article is a personnel announcement from key agencies.
+        Personnel announcements from FSS, FSC, MOEF are always HIGH importance.
+        """
+        # Key agencies for personnel importance
+        key_agencies = ['금융감독원', '금융위원회', '기획재정부', 'FSS', 'FSC', 'MOEF']
+        
+        # Personnel-related keywords
+        personnel_keywords = [
+            '인사', '인사발령', '인사이동', '임명', '취임', '발령', 
+            '부원장', '원장', '국장', '실장', '부장', '팀장',
+            '승진', '전보', '보직', '개편', '조직개편'
+        ]
+        
+        # Check if agency is relevant
+        is_key_agency = any(agency in agency_name for agency in key_agencies)
+        
+        # Check if title contains personnel keywords
+        has_personnel_keyword = any(keyword in title for keyword in personnel_keywords)
+        
+        return is_key_agency and has_personnel_keyword
+
     def process(self, article: Dict[str, Any], agency_name: str) -> Dict[str, Any]:
         """
         Main pipeline: Filter -> Analyze (if important)
@@ -226,21 +249,36 @@ class HybridAnalyzer:
         description = article.get('description') or article.get('content', '')[:200] or title
         full_content = article.get('content') or title
         
+        # Check for key personnel announcements (always HIGH priority)
+        is_personnel = self._is_personnel_announcement(title, agency_name)
+        
+        if is_personnel:
+            logger.info(f"🔴 Personnel announcement detected (Force HIGH): {title[:50]}")
+        
         # Step 1: Gatekeeper
         filter_result = self.filter(title, description, agency_name)
         time.sleep(API_CALL_DELAY)  # Rate limit protection
         
         if not filter_result:
             logger.warning(f"Filter failed for: {title[:50]}")
-            return {
-                "is_relevant": False,
-                "importance_score": 0,
-                "filter_status": "ERROR",
-                "analysis_status": "SKIPPED"
-            }
+            # For personnel announcements, still proceed even if filter fails
+            if is_personnel:
+                filter_result = {"is_relevant": True, "importance_score": 5}
+            else:
+                return {
+                    "is_relevant": False,
+                    "importance_score": 0,
+                    "filter_status": "ERROR",
+                    "analysis_status": "SKIPPED"
+                }
         
         is_relevant = filter_result.get('is_relevant', False)
         importance_score = filter_result.get('importance_score', 0)
+        
+        # Override for personnel announcements
+        if is_personnel:
+            is_relevant = True
+            importance_score = max(importance_score, 5)  # Force to maximum
         
         # Build result
         result = {
@@ -249,14 +287,22 @@ class HybridAnalyzer:
             "filter_status": "OK"
         }
         
-        # Step 2: Analyst (only for important news)
-        if is_relevant and importance_score >= self.importance_threshold:
+        # Step 2: Analyst (only for important news OR personnel announcements)
+        if is_relevant and (importance_score >= self.importance_threshold or is_personnel):
             logger.info(f"Proceeding to Tier 2 analysis (Score: {importance_score}): {title[:40]}...")
             
             analysis = self.analyze(title, full_content, agency_name)
             time.sleep(API_CALL_DELAY)  # Rate limit protection
             
             if analysis:
+                # Force HIGH risk level for personnel announcements
+                if is_personnel:
+                    analysis["risk_level"] = "High"
+                    analysis["risk_score"] = 5
+                    if "기타" not in analysis.get("risk_tags", []):
+                        analysis.setdefault("risk_tags", []).append("기타")
+                    analysis["is_personnel_announcement"] = True
+                
                 result.update(analysis)
                 result["analysis_status"] = "ANALYZED"
                 logger.info(f"Analyzed successfully (Model: {self.analyzer_model}): {title[:40]}")

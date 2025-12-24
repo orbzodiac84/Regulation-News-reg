@@ -54,6 +54,17 @@ const Icons = {
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214L13 3z" />
         </svg>
+    ),
+    Download: () => (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+    ),
+    Play: () => (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
     )
 }
 
@@ -77,9 +88,43 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
     const [isReportOpen, setIsReportOpen] = useState(false)
     const [selectedReportArticle, setSelectedReportArticle] = useState<Article | null>(null)
 
+    // Data Collection State
+    const [isCollecting, setIsCollecting] = useState(false)
+    const [collectMessage, setCollectMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
     const handleOpenReport = (article: Article) => {
         setSelectedReportArticle(article)
         setIsReportOpen(true)
+    }
+
+    // Trigger Data Collection
+    const triggerCollect = async () => {
+        setIsCollecting(true)
+        setCollectMessage(null)
+
+        try {
+            const response = await fetch('/api/trigger-collect', {
+                method: 'POST',
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                setCollectMessage({ type: 'success', text: '데이터 수집이 시작되었습니다! 잠시 후 새로고침 해주세요.' })
+                // Auto-refresh after 10 seconds
+                setTimeout(() => {
+                    fetchArticles(selectedAgency)
+                    setCollectMessage(null)
+                }, 10000)
+            } else {
+                setCollectMessage({ type: 'error', text: data.error || '수집 요청 실패' })
+            }
+        } catch (error) {
+            console.error('Collect error:', error)
+            setCollectMessage({ type: 'error', text: '네트워크 오류가 발생했습니다.' })
+        } finally {
+            setIsCollecting(false)
+        }
     }
 
     // Config
@@ -328,13 +373,55 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                         Financial Regulatory Insights
                     </h1>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    {/* Data Collect Button */}
+                    <button
+                        onClick={triggerCollect}
+                        disabled={isCollecting}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${isCollecting
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-200 hover:shadow-md transform hover:-translate-y-0.5'
+                            }`}
+                        title="수동으로 최신 데이터 수집"
+                    >
+                        {isCollecting ? (
+                            <>
+                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="hidden sm:inline">수집 중...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Icons.Play />
+                                <span className="hidden sm:inline">데이터 수집</span>
+                            </>
+                        )}
+                    </button>
+
                     <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span className="text-xs font-semibold text-slate-500">Live Updates</span>
                     </div>
                 </div>
             </header>
+
+            {/* Collect Message Toast */}
+            {collectMessage && (
+                <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg font-medium text-sm transition-all duration-300 ${collectMessage.type === 'success'
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-red-500 text-white'
+                    }`}>
+                    {collectMessage.text}
+                    <button
+                        onClick={() => setCollectMessage(null)}
+                        className="ml-3 text-white/80 hover:text-white"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             <div className="max-w-7xl mx-auto flex pt-16 min-h-screen">
                 {/* Left Sidebar */}
