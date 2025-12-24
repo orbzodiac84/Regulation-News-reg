@@ -26,7 +26,7 @@ SCRAPER_RETRY_DELAY_MAX = 4.0
 # Security & Compliance
 # List of agency codes to force collection (bypass date cutoff)
 # Useful for agencies with timezone issues or parsing ambiguities
-FORCE_COLLECT_AGENCIES = ['BOK']
+FORCE_COLLECT_AGENCIES = ['BOK', 'FSS']
 
 # SSL Verification (False is recommended for some KR govt sites)
 SSL_VERIFY = False
