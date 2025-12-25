@@ -1,21 +1,35 @@
-from src.collectors.scraper import ContentScraper
-import json
-import logging
 
-logging.basicConfig(level=logging.INFO)
+import requests
+from bs4 import BeautifulSoup
+import urllib3
+urllib3.disable_warnings()
 
-def test_fss_scraping():
-    scraper = ContentScraper()
-    with open('config/agencies.json', 'r', encoding='utf-8') as f:
-        agencies = json.load(f)['agencies']
-    fss_config = next(a for a in agencies if a['code'] == 'FSS')
+url = "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218"
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
+}
+
+resp = requests.get(url, headers=headers, timeout=20, verify=False)
+print(f"Status: {resp.status_code}")
+
+soup = BeautifulSoup(resp.text, 'html.parser')
+
+# Current selector
+rows = soup.select("table tbody tr")
+print(f"Rows found with 'table tbody tr': {len(rows)}")
+
+if len(rows) > 0:
+    first = rows[0]
+    print("\n[First Row HTML]")
+    print(first.prettify()[:500])
     
-    items = scraper.fetch_list_items(fss_config)
-    print(f"Fetched {len(items)} items from FSS")
-    for item in items[:3]:
-        print(f"Title: {item['title']}")
-        print(f"Published At: {item['published_at']}")
-        print("-" * 30)
-
-if __name__ == "__main__":
-    test_fss_scraping()
+    title_elem = first.select_one("td.title a")
+    print(f"\nSelector 'td.title a': {title_elem}")
+    
+    date_elem = first.select_one("td:nth-of-type(4)")
+    print(f"Selector 'td:nth-of-type(4)': {date_elem}")
+else:
+    print("No rows found! Trying alternate selectors...")
+    # Try alternate selector
+    alt_rows = soup.select(".list-tb tbody tr")
+    print(f"Rows with '.list-tb tbody tr': {len(alt_rows)}")
