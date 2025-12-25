@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     maximumScale: 1,
     userScalable: false,
   },
+  icons: {
+    icon: '/icon.png',
+    apple: '/apple-icon.png',
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
