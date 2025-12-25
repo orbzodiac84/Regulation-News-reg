@@ -541,7 +541,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-4xl">
+                <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-4xl min-w-0 overflow-x-hidden">
                     {/* Mobile Filters - Horizontal Scroll */}
                     <div className="md:hidden overflow-x-auto flex gap-2 mb-4 pb-2 -mx-4 px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {agencies.map(agency => (
@@ -559,7 +559,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                     </div>
 
                     {/* Content Header: Refresh & View Switcher - Sticky */}
-                    <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-sm pb-4 mb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-slate-100">
+                    <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-sm pb-4 mb-2 border-b border-slate-100">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-slate-900">Latest Updates</h2>
 
