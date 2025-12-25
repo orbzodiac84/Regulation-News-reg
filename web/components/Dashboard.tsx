@@ -204,32 +204,50 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         setLoading(false)
     }
 
-    // Helper Functions (KST = UTC + 9 hours)
-    const toKST = (dateStr: string) => {
-        const date = new Date(dateStr)
-        return new Date(date.getTime() + 9 * 60 * 60 * 1000)
-    }
-
+    // Helper Functions - Using Intl.DateTimeFormat for cross-browser timezone consistency
     const formatDate = (dateStr: string) => {
-        const date = toKST(dateStr)
-        const month = date.getUTCMonth() + 1
-        const day = date.getUTCDate()
-        const hour = date.getUTCHours()
-        const minute = date.getUTCMinutes()
+        const date = new Date(dateStr)
 
-        if (hour === 0 && minute === 0) {
+        // Check if time is midnight (00:00) in KST
+        const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
+            timeZone: 'Asia/Seoul',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        })
+        const timeParts = timeFormatter.formatToParts(date)
+        const hour = timeParts.find(p => p.type === 'hour')?.value || '00'
+        const minute = timeParts.find(p => p.type === 'minute')?.value || '00'
+
+        const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
+            timeZone: 'Asia/Seoul',
+            month: 'numeric',
+            day: 'numeric'
+        })
+        const dateParts = dateFormatter.formatToParts(date)
+        const month = dateParts.find(p => p.type === 'month')?.value
+        const day = dateParts.find(p => p.type === 'day')?.value
+
+        if (hour === '00' && minute === '00') {
             return `${month}월 ${day}일`
         }
-        return `${month}월 ${day}일 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+        return `${month}월 ${day}일 ${hour}:${minute}`
     }
 
     const getDateDateString = (dateStr: string) => {
-        const date = toKST(dateStr)
-        const year = date.getUTCFullYear()
-        const month = date.getUTCMonth() + 1
-        const day = date.getUTCDate()
-        const weekDays = ['일', '월', '화', '수', '목', '금', '토']
-        const weekDay = weekDays[date.getUTCDay()]
+        const date = new Date(dateStr)
+        const formatter = new Intl.DateTimeFormat('ko-KR', {
+            timeZone: 'Asia/Seoul',
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            weekday: 'short'
+        })
+        const parts = formatter.formatToParts(date)
+        const year = parts.find(p => p.type === 'year')?.value
+        const month = parts.find(p => p.type === 'month')?.value
+        const day = parts.find(p => p.type === 'day')?.value
+        const weekDay = parts.find(p => p.type === 'weekday')?.value
         return `${year}. ${month}. ${day} (${weekDay})`
     }
 
