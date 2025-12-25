@@ -542,8 +542,8 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
 
                 {/* Main Content */}
                 <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-4xl">
-                    {/* Mobile Filters */}
-                    <div className="md:hidden overflow-x-auto flex gap-2 mb-6 pb-2 scrollbar-hide">
+                    {/* Mobile Filters - Horizontal Scroll */}
+                    <div className="md:hidden overflow-x-auto flex gap-2 mb-4 pb-2 -mx-4 px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {agencies.map(agency => (
                             <button
                                 key={agency}
@@ -603,7 +603,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                                         : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50'
                                         }`}
                                 >
-                                    {risk === 'All' ? 'Every Level' : `${risk} Risk`}
+                                    {risk === 'All' ? '전체' : risk}
                                 </button>
                             ))}
                         </div>
