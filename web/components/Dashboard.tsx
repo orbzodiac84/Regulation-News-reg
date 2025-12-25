@@ -204,50 +204,52 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         setLoading(false)
     }
 
-    // Helper Functions - Using Intl.DateTimeFormat for cross-browser timezone consistency
+    // Helper Functions - "Nuclear Option" for Date Parsing
+    // Purpose: Guarantee KST (UTC+9) regardless of Browser/OS timezone or parsing quirks
+    const toKSTDate = (dateStr: string) => {
+        // 1. Parse ISO string manually (Avoid new Date(string) quirks on Safari)
+        // Format: "YYYY-MM-DDTHH:mm:ss..."
+        const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
+        if (!match) return new Date() // Fallback (should not happen with Supabase)
+
+        // 2. Extract UTC components
+        const year = parseInt(match[1])
+        const month = parseInt(match[2]) - 1 // 0-indexed
+        const day = parseInt(match[3])
+        const hour = parseInt(match[4])
+        const minute = parseInt(match[5])
+        const second = parseInt(match[6])
+
+        // 3. Create True UTC Timestamp
+        const utcMs = Date.UTC(year, month, day, hour, minute, second)
+
+        // 4. Add KST Offset (+9 Hours)
+        const kstMs = utcMs + (9 * 60 * 60 * 1000)
+
+        // 5. Return Date object where getUTC*() methods will return KST values
+        return new Date(kstMs)
+    }
+
     const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr)
+        const kstDate = toKSTDate(dateStr)
+        const month = kstDate.getUTCMonth() + 1
+        const day = kstDate.getUTCDate()
+        const hour = kstDate.getUTCHours()
+        const minute = kstDate.getUTCMinutes()
 
-        // Check if time is midnight (00:00) in KST
-        const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
-            timeZone: 'Asia/Seoul',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        })
-        const timeParts = timeFormatter.formatToParts(date)
-        const hour = timeParts.find(p => p.type === 'hour')?.value || '00'
-        const minute = timeParts.find(p => p.type === 'minute')?.value || '00'
-
-        const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
-            timeZone: 'Asia/Seoul',
-            month: 'numeric',
-            day: 'numeric'
-        })
-        const dateParts = dateFormatter.formatToParts(date)
-        const month = dateParts.find(p => p.type === 'month')?.value
-        const day = dateParts.find(p => p.type === 'day')?.value
-
-        if (hour === '00' && minute === '00') {
+        if (hour === 0 && minute === 0) {
             return `${month}월 ${day}일`
         }
-        return `${month}월 ${day}일 ${hour}:${minute}`
+        return `${month}월 ${day}일 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
     }
 
     const getDateDateString = (dateStr: string) => {
-        const date = new Date(dateStr)
-        const formatter = new Intl.DateTimeFormat('ko-KR', {
-            timeZone: 'Asia/Seoul',
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-            weekday: 'short'
-        })
-        const parts = formatter.formatToParts(date)
-        const year = parts.find(p => p.type === 'year')?.value
-        const month = parts.find(p => p.type === 'month')?.value
-        const day = parts.find(p => p.type === 'day')?.value
-        const weekDay = parts.find(p => p.type === 'weekday')?.value
+        const kstDate = toKSTDate(dateStr)
+        const year = kstDate.getUTCFullYear()
+        const month = kstDate.getUTCMonth() + 1
+        const day = kstDate.getUTCDate()
+        const weekDays = ['일', '월', '화', '수', '목', '금', '토']
+        const weekDay = weekDays[kstDate.getUTCDay()]
         return `${year}. ${month}. ${day} (${weekDay})`
     }
 
