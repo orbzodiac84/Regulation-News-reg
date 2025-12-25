@@ -424,8 +424,26 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         )
     }
 
+    // DEBUG: Get sample date info for diagnosis
+    const debugSample = articles.length > 0 ? {
+        rawDate: articles[0].published_at,
+        kstDate: toKSTDate(articles[0].published_at),
+        groupKey: getDateDateString(articles[0].published_at),
+        title: articles[0].title?.substring(0, 30)
+    } : null
+
     return (
         <div className="min-h-screen bg-white font-sans text-slate-900">
+            {/* DEBUG BANNER - REMOVE AFTER FIX */}
+            {debugSample && (
+                <div className="fixed top-0 left-0 right-0 z-[100] bg-yellow-300 text-black p-2 text-xs font-mono">
+                    <div><strong>DEBUG v4d2ac92:</strong></div>
+                    <div>Raw: {debugSample.rawDate}</div>
+                    <div>KST UTC Day: {debugSample.kstDate.getUTCDate()}</div>
+                    <div>GroupKey: {debugSample.groupKey}</div>
+                    <div>Sample: {debugSample.title}...</div>
+                </div>
+            )}
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 h-16 flex items-center justify-between px-3 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink min-w-0">
