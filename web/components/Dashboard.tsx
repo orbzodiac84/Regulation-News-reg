@@ -559,7 +559,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                     </div>
 
                     {/* Content Header: Refresh & View Switcher - Sticky */}
-                    <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-sm pb-4 mb-2 border-b border-slate-100">
+                    <div className="sticky top-16 z-30 bg-white pb-4 mb-4 border-b border-slate-100">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-slate-900">Latest Updates</h2>
 
@@ -610,7 +610,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                     </div>
 
                     {/* Articles - Render based on View Mode */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 pt-4">
                         {loading && articles.length === 0 ? (
                             <div className="space-y-4 animate-pulse">
                                 {[1, 2, 3].map(i => (
