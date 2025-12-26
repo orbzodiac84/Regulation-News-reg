@@ -645,7 +645,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                                                 {/* Date Header Accordion Trigger - Sticky when expanded */}
                                                 <button
                                                     onClick={() => toggleDateExpansion(date)}
-                                                    className={`w-full flex items-center justify-between px-6 py-4 transition-colors ${isExpanded ? 'sticky top-36 z-20 bg-white/95 backdrop-blur-sm border-b border-sky-100 shadow-sm' : 'hover:bg-slate-50'}`}
+                                                    className={`w-full flex items-center justify-between px-6 py-4 transition-colors ${isExpanded ? 'sticky top-56 z-20 bg-white/95 backdrop-blur-sm border-b border-sky-100 shadow-sm' : 'hover:bg-slate-50'}`}
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <span className={`w-1 h-5 rounded-full ${isLatest ? 'bg-sky-500' : 'bg-slate-300'}`}></span>
