@@ -199,15 +199,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         if (error) console.error('Error:', error)
         else {
             setArticles(data || [])
-
-            // Auto-expand the latest date by default
-            if (data && data.length > 0) {
-                const latestDate = getDateDateString(data[0].published_at)
-                setExpandedDates(prev => ({
-                    ...prev,
-                    [latestDate]: true
-                }))
-            }
+            // Removed auto-expansion logic to keep all collapsed by default
         }
         setLoading(false)
     }
