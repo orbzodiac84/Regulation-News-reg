@@ -610,7 +610,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
                     </div>
 
                     {/* Articles - Render based on View Mode */}
-                    <div className="space-y-6 pt-8">
+                    <div className="space-y-6 pt-12">
                         {loading && articles.length === 0 ? (
                             <div className="space-y-4 animate-pulse">
                                 {[1, 2, 3].map(i => (
