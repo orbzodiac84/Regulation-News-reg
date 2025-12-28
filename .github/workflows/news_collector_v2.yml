@@ -1,0 +1,54 @@
+
+name: v2.0 News Collector (Beta)
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Runs every 30 minutes
+  workflow_dispatch:        # Manual trigger
+  push:
+    branches:
+      - feat/v2.0-upgrade   # Trigger on push to this branch only
+
+jobs:
+  collect-and-analyze-v2:
+    runs-on: ubuntu-latest
+    
+    # Only run schedule on the v2 branch context (prevent double run from main)
+    # Actually, cron runs on DEFAULT branch usually. 
+    # To run cron for v2 db, we usually need a separate repo or special handling.
+    # But since we are inside the same repo, 'main' branch workflow runs cron.
+    # v2 branch workflow cron *might* run but usually Github runs cron from default branch.
+    # Strategy: We will add a NEW JOB to the MAIN workflow or just rely on Manual Trigger for now?
+    # User asked for "Run schedule periodically".
+    # GitHub Actions Cron ONLY runs from the Default Branch (main).
+    # So we cannot easily have a separate cron running "code from feat/v2.0-upgrade".
+    
+    # WORKAROUND: We must commit this file to 'main' as well, but with logic to checkout 'feat/v2.0-upgrade'.
+    
+    steps:
+    - name: Checkout v2.0 Branch
+      uses: actions/checkout@v3
+      with:
+        ref: feat/v2.0-upgrade  # Explicitly checkout v2 code
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run Collector (v2 Environment)
+      env:
+        # Inject v2 Secrets into standard Env Vars
+        SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_V2 }}
+        SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_V2 }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        # Flag to indicate v2 environment (if needed by logic)
+        ENV_TYPE: v2
+      run: python src/main.py
