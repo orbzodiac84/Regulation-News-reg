@@ -45,9 +45,9 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
     // Agency Name Mapping (EN -> KR)
     const getAgencyName = (code: string) => {
         const map: Record<string, string> = {
-            'FSC': '금융위',
-            'FSS': '금감원',
-            'MOEF': '기재부',
+            'FSC': '금융위원회',
+            'FSS': '금융감독원',
+            'MOEF': '기획재정부',
             'BOK': '한국은행'
         }
         return map[code] || code
@@ -59,11 +59,18 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
     });
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all duration-200 active:scale-[0.99] hover:shadow-md">
+        <div
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`
+                relative bg-white rounded-2xl p-5 border border-gray-100 shadow-sm
+                transition-all duration-300
+                hover:shadow-lg hover:border-blue-200 hover:-translate-y-[2px] hover:bg-blue-50/30
+                cursor-pointer group
+            `}
+        >
             {/* Header / Collapsed View */}
             <div
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="p-4 cursor-pointer"
+                className="cursor-pointer"
             >
                 <div className="flex justify-between items-start gap-3">
                     <div className="flex-1">
@@ -79,7 +86,7 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
                         </div>
 
                         {/* Title */}
-                        <h3 className={`text-[15px] font-bold leading-snug text-gray-900 ${isExpanded ? '' : 'line-clamp-2'}`}>
+                        <h3 className={`text-lg font-bold text-gray-900 leading-snug group-hover:text-blue-600 transition-colors ${isExpanded ? '' : 'line-clamp-2'}`}>
                             {article.title}
                         </h3>
                     </div>
@@ -98,14 +105,14 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
                     <div className="mt-3 space-y-3">
                         {/* AI Summary */}
                         {article.analysis_result?.summary ? (
-                            <div className="bg-white p-3 rounded-xl border border-gray-100 text-sm text-gray-600 space-y-1 shadow-sm">
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-[#5B4BFF] mb-1">
+                            <div className="bg-slate-50/50 p-3.5 rounded-xl border border-gray-200 text-sm text-gray-900 font-medium space-y-1">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 mb-2">
                                     <Sparkles size={12} />
                                     AI 3줄 요약
                                 </div>
-                                <ul className="list-disc list-outside pl-4 space-y-1">
+                                <ul className="list-disc list-outside pl-4 space-y-1.5">
                                     {article.analysis_result.summary.map((line, idx) => (
-                                        <li key={idx} className="leading-relaxed">{line}</li>
+                                        <li key={idx} className="leading-relaxed opacity-90">{line}</li>
                                     ))}
                                 </ul>
                             </div>
@@ -119,9 +126,9 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
                                 href={article.link}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-white border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+                                className="flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold transition-all hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300 hover:shadow-sm active:scale-95 group"
                             >
-                                <ExternalLink size={16} />
+                                <ExternalLink size={16} className="text-slate-500 transition-transform group-hover:text-slate-800 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                                 원문 보기
                             </a>
 
@@ -130,10 +137,10 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
                                     e.stopPropagation();
                                     onGenerateReport(article);
                                 }}
-                                className="flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#5B4BFF] text-white text-sm font-bold shadow-md shadow-blue-500/20 hover:bg-[#4A3AFF] transition-all active:scale-95"
+                                className="flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-sm font-bold transition-all hover:bg-blue-100 hover:text-blue-800 hover:border-blue-200 hover:shadow-sm active:scale-95 group"
                             >
-                                <FileText size={16} />
-                                심층 보고서
+                                <Sparkles size={16} className="text-blue-500 group-hover:text-blue-600 animate-pulse" />
+                                AI 심층 보고서
                             </button>
                         </div>
                     </div>
