@@ -1,21 +1,29 @@
 {
-    "name": "Financial Regulatory Insights",
-    "short_name": "MarketPulse",
-    "description": "AI-powered Korean financial regulatory news dashboard",
+    "name": "RegBrief - 실시간 금융 정책 브리핑",
+    "short_name": "RegBrief",
+    "description": "AI 기반 금융 규제 뉴스 대시보드",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#0ea5e9",
+    "background_color": "#1a1625",
+    "theme_color": "#5B4BFF",
     "icons": [
         {
-            "src": "/icon.png",
+            "src": "/logo_perfect.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
-            "src": "/icon.png",
+            "src": "/logo_perfect.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/logo_perfect.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ]
 }
