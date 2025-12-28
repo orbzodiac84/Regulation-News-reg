@@ -122,3 +122,33 @@ The system uses a 2-Tier AI approach with 2025-Standard Models.
     1. **System Alerts**: Critical Failures, Daily Reports.
     2. **News Alerts (Conditional)**: Sent **ONLY** if the article passed Tier 2 Analysis (Status `ANALYZED`, Score >= 3).
         - *Note*: Articles filtered out by Tier 1 (Score 0-2) do **NOT** trigger alerts.
+
+---
+
+## 7. v2.0 Upgrade Requirements (Beta 2.0)
+*Planned Features for the Next Major Version (Based on User Reference)*
+
+### 7.1 UI/UX Overhaul
+- **Design Philosophy**: "Premium & Dynamic". Depart from the simple admin look.
+- **Mobile First**: Optimized layout for mobile devices (Header, Touch interactions).
+- **View Modes**:
+    - **Collapsed View (Title Only)**: Default or toggleable view for quick scanning.
+    - **Expanded View**: Detailed analysis revealed upon interaction.
+
+### 7.2 Functional Enhancements
+- **Keyword Search**:
+    - Implementation of text-based search (PostgreSQL `websearch_to_tsquery` or simple `ilike`).
+- **Trending & Popularity**:
+    - **Trending Section**: Display top articles based on `view_count` or manual `is_trending` flag.
+    - **View Tracking**: Increment `view_count` on article interaction.
+- **Star Rating System**:
+    - Replace or Visualise "High/Medium/Low" with **1-5 Star Rating**.
+    - Allow Sorting/Filter by Star Rating.
+
+### 7.3 Development Infrastructure
+- **Environment Separation**: Strict separation between v1.0 (Prod) and v2.0 (Dev).
+    - **Database**: Dedicated v2.0 Supabase Project.
+    - **Codebase**: Dedicated `feat/v2.0-upgrade` branch.
+- **Data Strategy**: **Full Mirroring**.
+    - v2.0 DB must contain ALL historical data from v1.0.
+    - **Auto-Collection ON**: v2.0 must run its own independent collection schedule (every 30m) to simulate full production behavior.

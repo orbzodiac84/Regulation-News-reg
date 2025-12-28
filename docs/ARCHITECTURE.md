@@ -90,7 +90,10 @@ d:\Project\05_regulation_news\
 
 ### 4.2 Supabase Client (`src/db/client.py`)
 - **Responsibility**: Singleton connection to PostgreSQL.
-- **Env Vars**: Requires `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+- **Env Vars**:
+    - **v1.0 (Prod)**: `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
+    - **v2.0 (Dev)**: `NEXT_PUBLIC_SUPABASE_URL_V2`, `NEXT_PUBLIC_SUPABASE_ANON_KEY_V2`.
+- **Strategy**: Code logic detects environment/branch or config to switch connection targets.
 
 ### 4.3 Web Dashboard (`web/`)
 - **Security**: Protected by `middleware.ts` (Cookie-based Auth).
