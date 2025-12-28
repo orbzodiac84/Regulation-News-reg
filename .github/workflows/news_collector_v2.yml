@@ -51,4 +51,6 @@ jobs:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         # Flag to indicate v2 environment (if needed by logic)
         ENV_TYPE: v2
-      run: python src/main.py
+      run: |
+        export PYTHONPATH=$PYTHONPATH:.
+        python src/main.py
