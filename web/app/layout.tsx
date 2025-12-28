@@ -15,17 +15,23 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "RegBrief (Beta)",
   description: "AI 기반 금융 규제 뉴스 브리핑",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   icons: {
-    icon: '/icon.png',
-    apple: '/apple-icon.png',
+    icon: '/logo_perfect.png',
+    apple: '/logo_perfect.png',
   },
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'RegBrief',
+  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
