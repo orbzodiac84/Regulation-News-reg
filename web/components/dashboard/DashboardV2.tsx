@@ -8,17 +8,20 @@ import Header from './Header'
 import SearchBar from './SearchBar'
 import DateSection from './DateSection'
 import ReportModal from '@/components/ReportModal' // Reuse existing modal
-import { Article } from './NewsCard'
+import NewsCard, { Article } from './NewsCard'
 
 export default function DashboardV2() {
     const [articles, setArticles] = useState<Article[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectedAgency, setSelectedAgency] = useState<string | null>(null) // Agency filter
+    const [isAgencyExpanded, setIsAgencyExpanded] = useState(true) // Collapsible agency section
 
     // Modal State
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
     const [isReportModalOpen, setIsReportModalOpen] = useState(false)
     const [isMenuOpen, setIsMenuOpen] = useState(false) // Sidebar toggle
+    const [viewMode, setViewMode] = useState<'date' | 'list'>('date') // View Toggle State
 
     // 1. Fetch Data
     useEffect(() => {
@@ -43,8 +46,13 @@ export default function DashboardV2() {
 
     // 2. Filter & Group Data
     const processedData = useMemo(() => {
-        // A. Filter by Search Query
+        // A. Filter by Agency
         let filtered = articles
+        if (selectedAgency) {
+            filtered = filtered.filter(a => a.agency === selectedAgency)
+        }
+
+        // B. Filter by Search Query
         if (searchQuery) {
             const lowerQ = searchQuery.toLowerCase()
             filtered = filtered.filter(a =>
@@ -53,7 +61,7 @@ export default function DashboardV2() {
             )
         }
 
-        // B. Group by Date
+        // C. Group by Date
         const grouped: Record<string, Article[]> = {}
         filtered.forEach(article => {
             const kstDate = toKSTDate(article.published_at)
@@ -68,7 +76,7 @@ export default function DashboardV2() {
         })
 
         return grouped
-    }, [articles, searchQuery])
+    }, [articles, searchQuery, selectedAgency])
 
     // 3. Handlers
     const handleGenerateReport = (article: Article) => {
@@ -76,112 +84,229 @@ export default function DashboardV2() {
         setIsReportModalOpen(true)
     }
 
+    // Agency Mapping (EN -> KR) - Reordered: MOEF, FSC, FSS, BOK
+    const agencyOrder = ['MOEF', 'FSC', 'FSS', 'BOK']
+    const agencyNames: Record<string, string> = {
+        'MOEF': '기획재정부',
+        'FSC': '금융위원회',
+        'FSS': '금융감독원',
+        'BOK': '한국은행'
+    }
+
+    // Agency Icon Mapping (FSC = Gavel + Coin icon)
+    const agencyIcons: Record<string, React.ReactNode> = {
+        'MOEF': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+        'FSC': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /><circle cx="17" cy="17" r="4" strokeWidth={1.5} /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 15.5v3M15.5 17h3" /></svg>,
+        'FSS': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+        'BOK': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>,
+    }
+
     // Sidebar Content (StockEasy Style: Dark Theme)
+    // Desktop: Always visible | Mobile: Slide-in drawer
     const Sidebar = () => (
         <>
-            {/* Backdrop */}
+            {/* Mobile Backdrop */}
             {isMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 z-50 transition-opacity duration-300"
+                    className="fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 md:hidden"
                     onClick={() => setIsMenuOpen(false)}
                 />
             )}
 
-            {/* Drawer */}
-            <div className={`fixed inset-y-0 left-0 w-[280px] bg-[#1E1E1E] text-white z-[60] transform transition-transform duration-300 shadow-2xl ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            {/* Drawer - Always visible on lg:, slide-in on mobile */}
+            <aside className={`
+                fixed inset-y-0 left-0 w-[260px] bg-[#1E1E1E] text-white z-[60] 
+                transform transition-transform duration-300 shadow-2xl
+                lg:translate-x-0 lg:static lg:z-auto
+                ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+            `}>
                 <div className="p-6 h-full flex flex-col">
-                    {/* Brand */}
-                    <div className="mb-10 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-[#5B4BFF] flex items-center justify-center font-bold text-white">R</div>
-                        <h2 className="text-xl font-bold tracking-tight">RegBrief</h2>
+                    {/* Brand Logo */}
+                    <div className="mb-10 flex items-center gap-1">
+                        <img src="/logo_perfect.png" alt="RegBrief" className="w-14 h-14 object-contain" />
+                        <h2 className="text-3xl font-bold tracking-wide leading-none pb-1">
+                            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Reg</span>
+                            <span className="bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent ml-0.5">Brief</span>
+                        </h2>
                     </div>
 
                     {/* Menu Items */}
-                    <nav className="flex-1 space-y-1">
-                        <button className="flex items-center gap-3 w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                    <nav className="flex-1 space-y-2">
+                        <button
+                            onClick={() => setSelectedAgency(null)}
+                            className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl transition-all ${!selectedAgency ? 'text-white bg-white/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                             <span className="font-medium">홈</span>
                         </button>
-                        <button className="flex items-center gap-3 w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                        <button className="flex items-center gap-3 w-full text-left px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
                             <span className="font-medium">스크랩 보관함</span>
                         </button>
 
                         <div className="my-6 border-t border-white/10"></div>
-                        <div className="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Agency Filter</div>
 
-                        {['FSC', 'FSS', 'MOEF', 'BOK'].map(agency => (
-                            <button key={agency} className="flex items-center gap-3 w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                                <span>{agency}</span>
-                            </button>
-                        ))}
+                        {/* Collapsible Agency Section */}
+                        <button
+                            onClick={() => setIsAgencyExpanded(!isAgencyExpanded)}
+                            className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                        >
+                            <span className="font-medium">기관별 보도자료</span>
+                            <svg
+                                className={`w-4 h-4 transition-transform duration-200 ${isAgencyExpanded ? 'rotate-180' : ''}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        {isAgencyExpanded && (
+                            <div className="mt-2 space-y-1 pl-2">
+                                <button
+                                    onClick={() => setSelectedAgency(null)}
+                                    className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl transition-all ${selectedAgency === null ? 'text-white bg-[#3B82F6]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                    <span className="text-sm">전체</span>
+                                </button>
+
+                                {agencyOrder.map((code) => (
+                                    <button
+                                        key={code}
+                                        onClick={() => setSelectedAgency(code)}
+                                        className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl transition-all ${selectedAgency === code ? 'text-white bg-[#3B82F6]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                    >
+                                        {agencyIcons[code]}
+                                        <span className="text-sm">{agencyNames[code]}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </nav>
 
                     {/* Footer */}
-                    <div className="text-xs text-gray-500 mt-auto">
+                    <div className="text-xs text-gray-600 mt-auto flex items-center gap-2">
+                        <svg className="w-3 h-3 text-[#3B82F6]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" /></svg>
                         v2.0.0 (Beta)
                     </div>
                 </div>
-            </div>
+            </aside>
         </>
     )
 
     return (
-        <div className="min-h-screen bg-[#F5F7FA] text-gray-900 font-sans pb-20 selection:bg-[#5B4BFF]/20">
+        <div className="min-h-screen bg-[#F5F7FA] text-gray-900 font-sans selection:bg-blue-500/40 lg:flex">
             <Sidebar />
-            <Header onMenuClick={() => setIsMenuOpen(true)} />
-            <SearchBar onSearch={setSearchQuery} />
 
-            <main className="max-w-md mx-auto pt-6 px-0 sm:px-4">
-                {/* Search Result Header / Reset Button */}
-                {searchQuery && (
-                    <div className="px-4 mb-4 flex items-center justify-between">
-                        <div className="text-sm font-medium text-gray-900">
-                            '<span className="text-[#5B4BFF]">{searchQuery}</span>' 검색 결과: {processedData ? Object.values(processedData).flat().length : 0}건
+            {/* Main Content Area - Push effect on md+ screens */}
+            <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isMenuOpen ? 'md:pl-[260px] lg:pl-0' : ''}`}>
+                <Header
+                    onMenuClick={() => setIsMenuOpen(prev => !prev)}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                />
+
+                <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full">
+                    {/* Search Result Feedback */}
+                    {searchQuery && (
+                        <div className="mb-4 flex items-center justify-between bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                            <div className="text-sm font-medium text-blue-900">
+                                '<span className="font-bold">{searchQuery}</span>' 검색 결과: <span className="font-bold">{processedData ? Object.values(processedData).flat().length : 0}</span>건
+                            </div>
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="text-xs text-blue-500 hover:text-blue-700 underline flex items-center gap-1"
+                            >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                검색어 지우기
+                            </button>
                         </div>
-                        <button
-                            onClick={() => { setSearchQuery(''); /* Reset input via key or context ideally, but simple reload works */ }}
-                            className="text-xs text-gray-500 underline hover:text-gray-800"
-                        >
-                            전체 목록으로 돌아가기
-                        </button>
-                    </div>
-                )}
+                    )}
 
-                {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                        <div className="w-8 h-8 border-4 border-[#5B4BFF]/30 border-t-[#5B4BFF] rounded-full animate-spin"></div>
-                        <div className="text-sm text-gray-400 font-medium">데이터를 불러오는 중...</div>
+                    {/* Filter Section (Agency) */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        {/* 1. View Toggle (Capsule Style) */}
+                        <div className="bg-white p-1 rounded-full flex w-fit items-center border border-gray-200 shadow-sm">
+                            <button
+                                onClick={() => setViewMode('date')}
+                                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${viewMode === 'date' ? 'bg-[#3B82F6] text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                날짜별
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${viewMode === 'list' ? 'bg-[#3B82F6] text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>
+                                리스트
+                            </button>
+                        </div>
                     </div>
-                ) : (
-                    Object.entries(processedData).map(([dateTitle, dayArticles]) => (
-                        <DateSection
-                            key={dateTitle}
-                            dateTitle={dateTitle}
-                            articles={dayArticles}
-                            onGenerateReport={handleGenerateReport}
-                        />
-                    ))
-                )}
 
-                {!loading && Object.keys(processedData).length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                        <p className="text-lg font-bold text-gray-400 mb-2">검색 결과가 없습니다.</p>
-                        <p className="text-sm text-gray-400">다른 키워드로 검색해보세요.</p>
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="mt-6 px-6 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50"
-                        >
-                            목록 초기화
-                        </button>
-                    </div>
-                )}
-            </main>
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                            <div className="w-8 h-8 border-4 border-[#3B82F6]/30 border-t-[#3B82F6] rounded-full animate-spin"></div>
+                            <div className="text-sm text-gray-400 font-medium">데이터를 불러오는 중...</div>
+                        </div>
+                    ) : (
+                        viewMode === 'date' ? (
+                            // DATE VIEW
+                            Object.entries(processedData)
+                                .sort((a, b) => new Date(b[1][0].published_at).getTime() - new Date(a[1][0].published_at).getTime())
+                                .map(([dateTitle, dayArticles], idx) => (
+                                    <DateSection
+                                        key={dateTitle}
+                                        dateTitle={dateTitle}
+                                        articles={dayArticles}
+                                        defaultExpanded={idx === 0} // Expand only the first date
+                                        onGenerateReport={handleGenerateReport}
+                                    />
+                                ))
+                        ) : (
+                            // LIST VIEW
+                            <div className="space-y-3 px-4">
+                                {Object.values(processedData).flat()
+                                    .sort((a, b) => {
+                                        // 1. Date Desc
+                                        const dateDiff = new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+                                        if (dateDiff !== 0) return dateDiff;
+                                        // 2. Score Desc
+                                        return (b.analysis_result?.importance_score || 0) - (a.analysis_result?.importance_score || 0);
+                                    })
+                                    .map(article => (
+                                        <NewsCard
+                                            key={article.id}
+                                            article={article}
+                                            onGenerateReport={handleGenerateReport}
+                                        />
+                                    ))
+                                }
+                            </div>
+                        )
+                    )}
+
+                    {!loading && Object.keys(processedData).length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+                            <p className="text-lg font-bold text-gray-400 mb-2">검색 결과가 없습니다.</p>
+                            <p className="text-sm text-gray-400">다른 키워드로 검색해보세요.</p>
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="mt-6 px-6 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50"
+                            >
+                                목록 초기화
+                            </button>
+                        </div>
+                    )}
+                </main>
+            </div>
 
             {/* Report Modal (Legacy) */}
             {isReportModalOpen && selectedArticle && (
                 <ReportModal
                     isOpen={isReportModalOpen}
                     onClose={() => setIsReportModalOpen(false)}
-                    article={selectedArticle as any} // Type compatibility cast
+                    article={selectedArticle as any}
                 />
             )}
         </div>

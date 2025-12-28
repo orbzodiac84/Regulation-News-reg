@@ -1,25 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Pretendard Font (Standard for KR Web) */
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css");
+/* === Custom Theme Variables === */
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", Arial, "Noto Sans KR", sans-serif;
+  --color-primary: #5B4BFF;
+  --color-background: #F5F7FA;
+  --color-foreground: #111827;
+}
 
-:root {
-  --background: #F5F7FA;
-  /* StockEasy Background */
-  --foreground: #111827;
+/* === Global Styles === */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
-  color: var(--foreground);
-  background: var(--background);
-  -webkit-font-smoothing: antialiased;
-  /* Crisp text */
+  color: var(--color-foreground);
+  background: var(--color-background);
 }
 
-/* Scrollbar Hide (App-like feel) */
+/* === Utility Classes === */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
