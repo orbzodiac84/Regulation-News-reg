@@ -82,13 +82,22 @@ export default function DateSection({ dateTitle, articles, onGenerateReport, def
             {/* Articles List (Collapsible) */}
             {isExpanded && (
                 <div className="px-4 space-y-3 mt-1 mb-6 animate-in slide-in-from-top-2 duration-200 fade-in">
-                    {articles.map(article => (
-                        <NewsCard
-                            key={article.id}
-                            article={article}
-                            onGenerateReport={onGenerateReport}
-                        />
-                    ))}
+                    {[...articles]
+                        .sort((a, b) => {
+                            // 1. Importance score (desc)
+                            const scoreA = a.analysis_result?.importance_score || 0;
+                            const scoreB = b.analysis_result?.importance_score || 0;
+                            if (scoreB !== scoreA) return scoreB - scoreA;
+                            // 2. If same score, latest first
+                            return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+                        })
+                        .map(article => (
+                            <NewsCard
+                                key={article.id}
+                                article={article}
+                                onGenerateReport={onGenerateReport}
+                            />
+                        ))}
                 </div>
             )}
         </section>
