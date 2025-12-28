@@ -223,20 +223,19 @@ export default function DashboardV2() {
                         </div>
                     )}
 
-                    {/* Filter Section (Agency) */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        {/* 1. View Toggle (Capsule Style) */}
-                        <div className="bg-white p-1 rounded-full flex w-fit items-center border border-gray-200 shadow-sm">
+                    {/* View Toggle (Centered, Black Active) */}
+                    <div className="flex justify-center mb-6">
+                        <div className="bg-white p-1 rounded-full flex items-center border border-gray-200 shadow-sm">
                             <button
                                 onClick={() => setViewMode('date')}
-                                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${viewMode === 'date' ? 'bg-[#3B82F6] text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
+                                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${viewMode === 'date' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 날짜별
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${viewMode === 'list' ? 'bg-[#3B82F6] text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
+                                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${viewMode === 'list' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>
                                 리스트
@@ -259,7 +258,7 @@ export default function DashboardV2() {
                                         key={dateTitle}
                                         dateTitle={dateTitle}
                                         articles={dayArticles}
-                                        defaultExpanded={idx === 0} // Expand only the first date
+                                        defaultExpanded={false} // All collapsed by default
                                         onGenerateReport={handleGenerateReport}
                                     />
                                 ))
