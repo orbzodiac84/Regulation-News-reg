@@ -45,26 +45,28 @@ export default function DateSection({ dateTitle, articles, onGenerateReport, def
                     {/* Left Accent Bar */}
                     <div className={`absolute left-0 top-3 bottom-3 w-1.5 rounded-r-md transition-colors ${isExpanded ? 'bg-[#3B82F6]' : 'bg-gray-300 group-hover:bg-[#3B82F6]/70'}`}></div>
 
-                    <div className="flex items-center gap-3 flex-wrap">
-                        {/* Date Title (Always Dark) */}
-                        <h2 className="text-xl font-bold tracking-tight mr-2 text-slate-900">
-                            {dateTitle}
-                        </h2>
+                    <div className="flex flex-col gap-2">
+                        {/* Row 1: Date Title + Total Count */}
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                                {dateTitle}
+                            </h2>
+                            <span className="px-2.5 py-1 text-xs font-bold text-slate-500 bg-slate-100 rounded-md whitespace-nowrap">
+                                총 {articles.length}건
+                            </span>
+                        </div>
 
-                        {/* Article Count Badge */}
-                        <span className="px-2.5 py-1 text-xs font-bold text-slate-500 bg-slate-100 rounded-md whitespace-nowrap">
-                            총 {articles.length}건
-                        </span>
-
-                        {/* Agency Breakdown Badges */}
-                        {Object.entries(agencyCounts).map(([agency, count]) => {
-                            const config = agencyConfig[agency] || { name: agency, className: 'bg-gray-50 text-gray-600 border border-gray-100' };
-                            return (
-                                <span key={agency} className={`px-2 py-1 text-xs font-bold rounded-md whitespace-nowrap ${config.className}`}>
-                                    {config.name} {count}
-                                </span>
-                            );
-                        })}
+                        {/* Row 2: Agency Breakdown Badges */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {Object.entries(agencyCounts).map(([agency, count]) => {
+                                const config = agencyConfig[agency] || { name: agency, className: 'bg-gray-50 text-gray-600 border border-gray-100' };
+                                return (
+                                    <span key={agency} className={`px-2 py-1 text-xs font-bold rounded-md whitespace-nowrap ${config.className}`}>
+                                        {config.name} {count}
+                                    </span>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {/* Arrow Icon */}
