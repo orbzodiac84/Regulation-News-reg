@@ -4,6 +4,7 @@ name: v2.0 News Collector (Beta)
 on:
   schedule:
     - cron: '*/30 * * * *'  # Runs every 30 minutes
+    # Refreshed registration
   workflow_dispatch:        # Manual trigger
   push:
     branches:
