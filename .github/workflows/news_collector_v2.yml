@@ -10,10 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout v2.0 Branch
+    - name: Checkout code
       uses: actions/checkout@v3
-      with:
-        ref: feat/v2.0-upgrade
 
     - name: Set up Python
       uses: actions/setup-python@v4
