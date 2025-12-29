@@ -41,5 +41,6 @@ The codebase (`src/`) is the reality, but these documents defined the Rules of E
 1.  **Check Config**: Before answering "What keywords are triggered?", read `config/safeguard_keywords.json`.
 2.  **Check Schema**: Before writing SQL, read `docs/SCHEMA.md`.
 3.  **Check Legacy**: Before editing `scheduler.py`, stop. It is deprecated.
+4.  **v2.0 Upgrade**: When working on `feat/v2.0-upgrade`, you MUST use the v2.0 Environment Variables and Database. DO NOT touch v1.0 Production Data.
 
 > **"This document is the bridge between the User's Intent and the System's Reality."**
