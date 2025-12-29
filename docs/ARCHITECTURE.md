@@ -90,7 +90,21 @@ d:\Project\05_regulation_news\
 
 ### 4.2 Supabase Client (`src/db/client.py`)
 - **Responsibility**: Singleton connection to PostgreSQL.
-- **Env Vars**: Requires `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+### 4.2 Supabase Client (`src/db/client.py`)
+- **Responsibility**: Singleton connection to PostgreSQL.
+- **Connection Logic**:
+    - **v1.0 (Prod)**: Uses `SUPABASE_URL` & `SUPABASE_ANON_KEY`.
+    - **v2.0 (Dev/Preview)**: Uses `NEXT_PUBLIC_SUPABASE_URL_V2` & `NEXT_PUBLIC_SUPABASE_ANON_KEY_V2` if `NEXT_PUBLIC_USE_V2_DB=true`.
+
+### 4.3 Environment Configuration (Secrets Map)
+*Updated for v2.0 Dual-Environment Setup*
+
+| Variable Name | Purpose | Target (Where to Set) |
+|---------------|---------|-----------------------|
+| `NEXT_PUBLIC_SUPABASE_URL_V2` | v2 DB Endpoint | **Github Secrets** (Actions), **Vercel** (Preview) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY_V2` | v2 DB API Key | **Github Secrets** (Actions), **Vercel** (Preview) |
+| `NEXT_PUBLIC_USE_V2_DB` | v2 Switch Flag (`true`) | **Vercel** (Preview), Local `.env` |
+| `ENV_TYPE` | Backend Branch Flag (`v2`) | **Github Actions** (`news_collector_v2.yml`) |
 
 ### 4.3 Web Dashboard (`web/`)
 - **Security**: Protected by `middleware.ts` (Cookie-based Auth).

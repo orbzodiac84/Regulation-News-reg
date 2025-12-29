@@ -17,6 +17,9 @@
 | `published_at` | `timestamptz` | No | - | **KST (UTC+9)** Timestamp of publication |
 | `analysis_result`| `jsonb` | Yes | - | AI Analysis Output (See Section 2) |
 | `embedding` | `vector(1536)` | Yes | - | **[NOT IMPLEMENTED]** Legacy Placeholder (Empty) |
+| `view_count` | `integer` | No | 0 | **[v2.0]** Article View Count |
+| `star_rating` | `integer` | Yes | - | **[v2.0]** Manual Rating (1-5) |
+| `is_trending` | `boolean` | No | false | **[v2.0]** Trending Status for UI |
 
 ---
 
