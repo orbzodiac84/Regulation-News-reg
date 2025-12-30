@@ -1,10 +1,10 @@
 name: v2.0 News Collector (Beta)
 
 on:
-  schedule:
-    # Run every 15 minutes to force re-registration and check capability
-    - cron: '*/15 * * * *'
-  workflow_dispatch:
+  # Schedule disabled - using external cron (cron-job.org)
+  # schedule:
+  #   - cron: '*/15 * * * *'
+  workflow_dispatch:  # Keep this for cron-job.org and manual triggers
 
 jobs:
   collect-and-analyze-v2:
