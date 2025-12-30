@@ -2,12 +2,19 @@ name: v2.0 News Collector (Beta)
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    # Run at minutes 13 and 43 to avoid high-traffic times (XX:00, XX:30)
+    - cron: '13,43 * * * *'
   workflow_dispatch:
+
+# Prevent multiple runs from overlapping
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   collect-and-analyze-v2:
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # Force kill if stuck for more than 20 mins
     
     steps:
     - name: Checkout code
