@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from src.utils.logger import setup_logger
 from src.pipeline import Pipeline
@@ -14,6 +15,7 @@ def main():
         pipeline.run()
     except Exception as e:
         logger.critical(f"Fatal error in main loop: {e}", exc_info=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
