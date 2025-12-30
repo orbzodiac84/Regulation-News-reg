@@ -1,4 +1,5 @@
 # MarketPulse-Reg (Pilot)
+<!-- Scheduler keepalive: 2024-12-30 10:15 KST -->
 
 금융 규제 분석 및 알림 시스템
 
