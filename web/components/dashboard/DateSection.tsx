@@ -7,9 +7,10 @@ interface DateSectionProps {
     articles: Article[];
     onGenerateReport: (article: Article) => void;
     defaultExpanded?: boolean;
+    newCount?: number;  // Number of new articles in this section
 }
 
-export default function DateSection({ dateTitle, articles, onGenerateReport, defaultExpanded = false }: DateSectionProps) {
+export default function DateSection({ dateTitle, articles, onGenerateReport, defaultExpanded = false, newCount = 0 }: DateSectionProps) {
     const [isExpanded, setIsExpanded] = React.useState(defaultExpanded);
 
     // Calculate agency counts for this date
@@ -46,7 +47,7 @@ export default function DateSection({ dateTitle, articles, onGenerateReport, def
                     <div className={`absolute left-0 top-3 bottom-3 w-1.5 rounded-r-md transition-colors ${isExpanded ? 'bg-[#3B82F6]' : 'bg-gray-300 group-hover:bg-[#3B82F6]/70'}`}></div>
 
                     <div className="flex flex-col gap-2">
-                        {/* Row 1: Date Title + Total Count */}
+                        {/* Row 1: Date Title + Total Count + NEW Badge */}
                         <div className="flex items-center gap-3">
                             <h2 className="text-xl font-bold tracking-tight text-slate-900">
                                 {dateTitle}
@@ -54,6 +55,12 @@ export default function DateSection({ dateTitle, articles, onGenerateReport, def
                             <span className="px-2.5 py-1 text-xs font-bold text-slate-500 bg-slate-100 rounded-md whitespace-nowrap">
                                 총 {articles.length}건
                             </span>
+                            {/* NEW Badge for date section */}
+                            {newCount > 0 && (
+                                <span className="px-2 py-1 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-orange-500 rounded-md animate-pulse whitespace-nowrap">
+                                    NEW {newCount}
+                                </span>
+                            )}
                         </div>
 
                         {/* Row 2: Agency Breakdown Badges */}

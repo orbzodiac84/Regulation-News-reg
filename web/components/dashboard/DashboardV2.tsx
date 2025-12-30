@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { toKSTDate } from '@/utils/date' // Use new utils
 import { supabase } from '@/utils/supabase/client'
+import { getLastVisitTime, updateLastVisitTime, isArticleNew, countNewArticles } from '@/utils/newArticleTracker'
 import Header from './Header'
 import SearchBar from './SearchBar'
 import DateSection from './DateSection'
@@ -22,10 +23,22 @@ export default function DashboardV2() {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false)
     const [isMenuOpen, setIsMenuOpen] = useState(false) // Sidebar toggle
     const [viewMode, setViewMode] = useState<'date' | 'list'>('date') // View Toggle State
+    const [lastVisitTime, setLastVisitTime] = useState<Date | null>(null) // For NEW badge tracking
 
-    // 1. Fetch Data
+    // 1. Fetch Data & Track Visit
     useEffect(() => {
-        fetchArticles()
+        // Get last visit time BEFORE updating (to show NEW badges correctly)
+        const lastVisit = getLastVisitTime();
+        setLastVisitTime(lastVisit);
+
+        fetchArticles();
+
+        // Update last visit time AFTER a short delay (so user sees NEW badges first)
+        const timer = setTimeout(() => {
+            updateLastVisitTime();
+        }, 3000); // 3 second delay before marking as "visited"
+
+        return () => clearTimeout(timer);
     }, [])
 
     const fetchArticles = async () => {
@@ -61,9 +74,15 @@ export default function DashboardV2() {
             )
         }
 
-        // C. Group by Date
+        // C. Add isNew flag to each article
+        const articlesWithNewFlag = filtered.map(article => ({
+            ...article,
+            isNew: isArticleNew(article.created_at || article.published_at, lastVisitTime)
+        }));
+
+        // D. Group by Date
         const grouped: Record<string, Article[]> = {}
-        filtered.forEach(article => {
+        articlesWithNewFlag.forEach(article => {
             const kstDate = toKSTDate(article.published_at)
             const dateKey = `${kstDate.getUTCFullYear()}. ${kstDate.getUTCMonth() + 1}. ${kstDate.getUTCDate()}`
 
@@ -76,7 +95,7 @@ export default function DashboardV2() {
         })
 
         return grouped
-    }, [articles, searchQuery, selectedAgency])
+    }, [articles, searchQuery, selectedAgency, lastVisitTime])
 
     // 3. Handlers
     const handleGenerateReport = (article: Article) => {
@@ -260,6 +279,7 @@ export default function DashboardV2() {
                                         articles={dayArticles}
                                         defaultExpanded={false} // All collapsed by default
                                         onGenerateReport={handleGenerateReport}
+                                        newCount={dayArticles.filter(a => a.isNew).length}
                                     />
                                 ))
                         ) : (

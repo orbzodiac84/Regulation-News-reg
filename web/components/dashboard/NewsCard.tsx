@@ -9,6 +9,7 @@ export interface Article {
     title: string;
     agency: string;
     published_at: string;
+    created_at?: string;  // For NEW badge tracking
     link: string;
     analysis_result?: {
         summary?: string[];
@@ -18,6 +19,7 @@ export interface Article {
     };
     view_count?: number;
     star_rating?: number; // Manual rating if any
+    isNew?: boolean;  // Client-side flag for NEW badge
 }
 
 interface NewsCardProps {
@@ -83,6 +85,12 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
                             <span className="text-xs text-gray-400 font-medium tracking-tight">
                                 {timeStr}
                             </span>
+                            {/* NEW Badge */}
+                            {article.isNew && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-bold text-white bg-gradient-to-r from-red-500 to-orange-500 rounded-md animate-pulse">
+                                    NEW
+                                </span>
+                            )}
                         </div>
 
                         {/* Title */}
