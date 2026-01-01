@@ -86,7 +86,8 @@ class Pipeline:
                 "link": item['link'],
                 "published_at": item.get('published_at') or datetime.now().isoformat(),
                 "content": item.get('content') or "",
-                "analysis_result": item.get('analysis_result')
+                "analysis_result": item.get('analysis_result'),
+                "category": item.get('category', 'press_release')
             }
             self.supabase.table("articles").insert(data).execute()
             logger.info("  > Saved to DB.")
