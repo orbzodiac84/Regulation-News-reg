@@ -121,7 +121,8 @@ class ContentScraper:
                                 'title': title,
                                 'link': link,
                                 'published_at': pub_date.isoformat(),
-                                'agency': agency_code
+                                'agency': agency_code,
+                                'category': agency_config.get('category', 'press_release')
                             })
                         else:
                             logger.info(f"  [{agency_code}] Reached cutoff ({pub_date.date()}). Stopping.")
@@ -133,7 +134,8 @@ class ContentScraper:
                             'title': title,
                             'link': link,
                             'published_at': now_kst.isoformat(),
-                             'agency': agency_config.get('code')
+                             'agency': agency_config.get('code'),
+                             'category': agency_config.get('category', 'press_release')
                         })
                 except Exception as e:
                     logger.error(f"[{agency_config.get('code')}] Error processing row: {e}")

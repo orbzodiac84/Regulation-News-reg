@@ -159,7 +159,8 @@ class Pipeline:
             try:
                 analysis_result = self.analyzer.process(
                     {'title': title, 'content': content, 'description': item.get('description', '')},
-                    agency_config.get('name', agency_id) if agency_config else agency_id
+                    agency_config.get('name', agency_id) if agency_config else agency_id,
+                    category=item.get('category', 'press_release')
                 )
                 item['analysis_result'] = analysis_result
             except Exception as e:

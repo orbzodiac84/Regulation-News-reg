@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, FileText, ExternalLink, Sparkles } from 'lucide-react'
 import StarRating from './StarRating'
@@ -8,6 +7,7 @@ export interface Article {
     id: string;
     title: string;
     agency: string;
+    category?: string; // 'press_release' | 'regulation_notice'
     published_at: string;
     created_at?: string;  // For NEW badge tracking
     link: string;
@@ -64,10 +64,10 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
         <div
             onClick={() => setIsExpanded(!isExpanded)}
             className={`
-                relative bg-white rounded-2xl p-5 border border-gray-100 shadow-sm
-                transition-all duration-300
-                hover:shadow-lg hover:border-blue-200 hover:-translate-y-[2px] hover:bg-blue-50/30
-                cursor-pointer group
+                relative bg - white rounded - 2xl p - 5 border border - gray - 100 shadow - sm
+transition - all duration - 300
+hover: shadow - lg hover: border - blue - 200 hover: -translate - y - [2px] hover: bg - blue - 50 / 30
+cursor - pointer group
             `}
         >
             {/* Header / Collapsed View */}
@@ -78,7 +78,7 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
                     <div className="flex-1">
                         {/* Meta: Agency & Time */}
                         <div className="flex items-center gap-2 mb-1.5">
-                            <span className={`px-2 py-0.5 text-[11px] font-bold rounded-md ${getAgencyColor(article.agency)}`}>
+                            <span className={`px - 2 py - 0.5 text - [11px] font - bold rounded - md ${getAgencyColor(article.agency)} `}>
                                 {getAgencyName(article.agency)}
                             </span>
                             <div className="w-0.5 h-2.5 bg-gray-200 rounded-full"></div>
@@ -94,7 +94,7 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
                         </div>
 
                         {/* Title */}
-                        <h3 className={`text-lg font-bold text-gray-900 leading-snug group-hover:text-blue-600 transition-colors ${isExpanded ? '' : 'line-clamp-2'}`}>
+                        <h3 className={`text - lg font - bold text - gray - 900 leading - snug group - hover: text - blue - 600 transition - colors ${isExpanded ? '' : 'line-clamp-2'} `}>
                             {article.title}
                         </h3>
                     </div>

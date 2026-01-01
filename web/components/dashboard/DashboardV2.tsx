@@ -16,7 +16,9 @@ export default function DashboardV2() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedAgency, setSelectedAgency] = useState<string | null>(null) // Agency filter
-    const [isAgencyExpanded, setIsAgencyExpanded] = useState(true) // Collapsible agency section
+    const [currentCategory, setCurrentCategory] = useState<'press_release' | 'regulation_notice'>('press_release') // Category filter
+    const [isAgencyExpanded, setIsAgencyExpanded] = useState(true) // Collapsible agency section (Press Release)
+    const [isRegExpanded, setIsRegExpanded] = useState(true) // Collapsible regulation section
 
     // Modal State
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
@@ -59,8 +61,9 @@ export default function DashboardV2() {
 
     // 2. Filter & Group Data
     const processedData = useMemo(() => {
-        // A. Filter by Agency
-        let filtered = articles
+        // A. Filter by Category & Agency
+        let filtered = articles.filter(a => (a.category || 'press_release') === currentCategory)
+
         if (selectedAgency) {
             filtered = filtered.filter(a => a.agency === selectedAgency)
         }
@@ -112,12 +115,21 @@ export default function DashboardV2() {
         'BOK': '한국은행'
     }
 
+    // Regulation Agencies
+    const regAgencyOrder = ['FSC_REG', 'FSS_REG']
+    const regAgencyNames: Record<string, string> = {
+        'FSC_REG': '금융위원회',
+        'FSS_REG': '금융감독원'
+    }
+
     // Agency Icon Mapping (FSC = Gavel + Coin icon)
     const agencyIcons: Record<string, React.ReactNode> = {
         'MOEF': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
         'FSC': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /><circle cx="17" cy="17" r="4" strokeWidth={1.5} /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 15.5v3M15.5 17h3" /></svg>,
         'FSS': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
         'BOK': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>,
+        'FSC_REG': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /><circle cx="17" cy="17" r="4" strokeWidth={1.5} /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 15.5v3M15.5 17h3" /></svg>,
+        'FSS_REG': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
     }
 
     // Sidebar Content (StockEasy Style: Dark Theme)
@@ -152,7 +164,10 @@ export default function DashboardV2() {
                     {/* Menu Items */}
                     <nav className="flex-1 space-y-2">
                         <button
-                            onClick={() => setSelectedAgency(null)}
+                            onClick={() => {
+                                setCurrentCategory('press_release')
+                                setSelectedAgency(null)
+                            }}
                             className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl transition-all ${!selectedAgency ? 'text-white bg-white/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
@@ -197,6 +212,50 @@ export default function DashboardV2() {
                                     >
                                         {agencyIcons[code]}
                                         <span className="text-sm">{agencyNames[code]}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Regulation Section */}
+                        <div className="my-2 border-t border-white/5"></div>
+                        <button
+                            onClick={() => setIsRegExpanded(!isRegExpanded)}
+                            className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                        >
+                            <span className="font-medium">금융법규제개정예고</span>
+                            <svg
+                                className={`w-4 h-4 transition-transform duration-200 ${isRegExpanded ? 'rotate-180' : ''}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        {isRegExpanded && (
+                            <div className="mt-2 space-y-1 pl-2">
+                                <button
+                                    onClick={() => {
+                                        setCurrentCategory('regulation_notice')
+                                        setSelectedAgency(null)
+                                    }}
+                                    className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl transition-all ${currentCategory === 'regulation_notice' && selectedAgency === null ? 'text-white bg-[#3B82F6]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                    <span className="text-sm">전체</span>
+                                </button>
+
+                                {regAgencyOrder.map((code) => (
+                                    <button
+                                        key={code}
+                                        onClick={() => {
+                                            setCurrentCategory('regulation_notice')
+                                            setSelectedAgency(code)
+                                        }}
+                                        className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl transition-all ${currentCategory === 'regulation_notice' && selectedAgency === code ? 'text-white bg-[#3B82F6]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                    >
+                                        {agencyIcons[code]}
+                                        <span className="text-sm">{regAgencyNames[code]}</span>
                                     </button>
                                 ))}
                             </div>
