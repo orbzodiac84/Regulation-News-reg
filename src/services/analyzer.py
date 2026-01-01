@@ -278,7 +278,7 @@ class HybridAnalyzer:
             logger.error(f"Error applying safeguards: {e}")
             return current_score
 
-    def process(self, article: Dict[str, Any], agency_name: str) -> Dict[str, Any]:
+    def process(self, article: Dict[str, Any], agency_name: str, category: str = 'press_release') -> Dict[str, Any]:
         """
         Main pipeline: Filter -> Analyze (if important)
         
@@ -288,15 +288,15 @@ class HybridAnalyzer:
         description = article.get('description') or article.get('content', '')[:200] or title
         full_content = article.get('content') or title
         
-        # Step 1: Gatekeeper
-        filter_result = self.filter(title, description, agency_name)
-        time.sleep(API_CALL_DELAY)  # Rate limit protection
-        
-        # Default values if filter fails
+        # Default values
         is_relevant = False
         importance_score = 0
         filter_status = "OK"
 
+        # Step 1: Gatekeeper
+        filter_result = self.filter(title, description, agency_name)
+        time.sleep(API_CALL_DELAY)  # Rate limit protection
+        
         if filter_result:
             is_relevant = filter_result.get('is_relevant', False)
             importance_score = filter_result.get('importance_score', 0)
