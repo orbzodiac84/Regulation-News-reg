@@ -98,7 +98,7 @@ export default function DashboardV2() {
         })
 
         return grouped
-    }, [articles, searchQuery, selectedAgency, lastVisitTime])
+    }, [articles, searchQuery, selectedAgency, lastVisitTime, currentCategory])
 
     // 3. Handlers
     const handleGenerateReport = (article: Article) => {
