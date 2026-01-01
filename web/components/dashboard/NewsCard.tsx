@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, FileText, ExternalLink, Sparkles } from 'lucide-react'
 import StarRating from './StarRating'
@@ -63,7 +64,12 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
     return (
         <div
             onClick={() => setIsExpanded(!isExpanded)}
-            className="relative bg-white rounded-2xl p-5 border border-gray-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-blue-200 hover:-translate-y-[2px] hover:bg-blue-50/30 cursor-pointer group"
+            className={`
+                relative bg-white rounded-2xl p-5 border border-gray-100 shadow-sm
+                transition-all duration-300
+                hover:shadow-lg hover:border-blue-200 hover:-translate-y-[2px] hover:bg-blue-50/30
+                cursor-pointer group
+            `}
         >
             {/* Header / Collapsed View */}
             <div
