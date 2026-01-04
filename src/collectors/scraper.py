@@ -49,11 +49,15 @@ class ContentScraper:
         if last_crawled_date and last_crawled_date.tzinfo is None:
              last_crawled_date = kst.localize(last_crawled_date)
 
+        # Max cutoff: never collect older than 7 days (even if DB was cleared)
+        max_cutoff = now_kst - timedelta(days=7)
+
         if last_crawled_date:
-            cutoff_date = last_crawled_date - timedelta(days=1)
+            # Use the more recent of: (last_crawled - 1 day) or (now - 7 days)
+            cutoff_date = max(last_crawled_date - timedelta(days=1), max_cutoff)
             logger.info(f"[{agency_config.get('code')}] Incremental: > {cutoff_date.strftime('%Y-%m-%d')}")
         else:
-            cutoff_date = now_kst - timedelta(days=7)
+            cutoff_date = max_cutoff
             logger.info(f"[{agency_config.get('code')}] Full Scan (7d): > {cutoff_date.strftime('%Y-%m-%d')}")
 
         all_items = []
