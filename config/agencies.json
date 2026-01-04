@@ -5,14 +5,16 @@
       "name": "금융위 (FSC)",
       "category": "press_release",
       "collection_method": "rss",
-      "url": "http://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111"
+      "url": "http://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111",
+      "base_url": "http://www.fsc.go.kr"
     },
     {
       "code": "MOEF",
       "name": "기재부 (MOEF)",
       "category": "press_release",
       "collection_method": "rss",
-      "url": "https://www.korea.kr/rss/dept_moef.xml"
+      "url": "https://www.korea.kr/rss/dept_moef.xml",
+      "base_url": "https://www.korea.kr"
     },
     {
       "code": "FSS",
@@ -20,6 +22,7 @@
       "category": "press_release",
       "collection_method": "scraper",
       "url": "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218",
+      "base_url": "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218",
       "selector": {
         "list": "table tbody tr",
         "title": "td.title a",
@@ -34,6 +37,7 @@
       "category": "press_release",
       "collection_method": "scraper",
       "url": "https://www.bok.or.kr/portal/singl/newsData/listCont.do?menuNo=201263&pageIndex=1",
+      "base_url": "https://www.bok.or.kr/portal/singl/newsData/listCont.do?menuNo=201263&pageIndex=1",
       "selector": {
         "list": "li.bbsRowCls",
         "title": "a.title",
@@ -48,6 +52,7 @@
       "category": "regulation_notice",
       "collection_method": "scraper",
       "url": "https://www.fss.or.kr/fss/job/lrgRegItnPrvntc/list.do?menuNo=200489",
+      "base_url": "https://www.fss.or.kr/fss/job/lrgRegItnPrvntc/list.do?menuNo=200489",
       "selector": {
         "list": "table tbody tr",
         "title": "td.title a",
@@ -62,6 +67,7 @@
       "category": "regulation_notice",
       "collection_method": "scraper",
       "url": "https://www.fsc.go.kr/po040301",
+      "base_url": "https://www.fsc.go.kr/po040301",
       "selector": {
         "list": ".board-list-wrap li",
         "title": ".subject a",
@@ -76,6 +82,7 @@
       "category": "regulation_notice",
       "collection_method": "scraper",
       "url": "https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488",
+      "base_url": "https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488",
       "selector": {
         "list": ".bd-list tbody tr",
         "title": "td:nth-child(2) a",
