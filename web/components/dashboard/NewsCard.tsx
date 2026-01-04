@@ -59,8 +59,8 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
 
     // Detailed Category for Regulation
     const getSubCategory = (code: string) => {
-        if (code === 'FSS_REG') return '세칙예고'
-        if (code === 'FSS_REG_INFO') return '최근정보'
+        if (code === 'FSS_REG') return '개정 예고'
+        if (code === 'FSS_REG_INFO') return '개정 정보'
         if (code === 'FSC_REG') return '입법/규정'
         return null
     }
