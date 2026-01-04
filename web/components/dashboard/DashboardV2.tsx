@@ -17,15 +17,31 @@ export default function DashboardV2() {
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedAgency, setSelectedAgency] = useState<string | null>(null) // Agency filter
     const [currentCategory, setCurrentCategory] = useState<'press_release' | 'regulation_notice'>('press_release') // Category filter
+
+    // UI State
     const [isAgencyExpanded, setIsAgencyExpanded] = useState(false) // Collapsible agency section (Press Release)
     const [isRegExpanded, setIsRegExpanded] = useState(false) // Collapsible regulation section
-
-    // Modal State
-    const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
+    const [isFSSRegGroupExpanded, setIsFSSRegGroupExpanded] = useState(false) // Nested collapsible FSS section in Regulation
     const [isReportModalOpen, setIsReportModalOpen] = useState(false)
     const [isMenuOpen, setIsMenuOpen] = useState(false) // Sidebar toggle
     const [viewMode, setViewMode] = useState<'date' | 'list'>('date') // View Toggle State
+    const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
     const [lastVisitTime, setLastVisitTime] = useState<Date | null>(null) // For NEW badge tracking
+
+    // Track NEW status for main menus (Dependent on lastVisitTime)
+    const hasNewPress = useMemo(() => {
+        return articles.some(a =>
+            (a.category === 'press_release' || !a.category) &&
+            isArticleNew(a.created_at || a.published_at, lastVisitTime)
+        )
+    }, [articles, lastVisitTime])
+
+    const hasNewReg = useMemo(() => {
+        return articles.some(a =>
+            a.category === 'regulation_notice' &&
+            isArticleNew(a.created_at || a.published_at, lastVisitTime)
+        )
+    }, [articles, lastVisitTime])
 
     // 1. Fetch Data & Track Visit
     useEffect(() => {
@@ -182,12 +198,19 @@ export default function DashboardV2() {
 
                         <div className="my-6 border-t border-white/10"></div>
 
-                        {/* Collapsible Agency Section */}
+                        {/* Collapsible Agency Section (Press Release) */}
                         <button
                             onClick={() => setIsAgencyExpanded(!isAgencyExpanded)}
-                            className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                            className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all relative"
                         >
-                            <span className="font-medium">보도자료</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">보도자료</span>
+                                {hasNewPress && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-500 border border-red-500/30 animate-pulse">
+                                        NEW
+                                    </span>
+                                )}
+                            </div>
                             <svg
                                 className={`w-4 h-4 transition-transform duration-200 ${isAgencyExpanded ? 'rotate-180' : ''}`}
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -231,7 +254,14 @@ export default function DashboardV2() {
                             onClick={() => setIsRegExpanded(!isRegExpanded)}
                             className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
                         >
-                            <span className="font-medium">규제개정</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">규제개정</span>
+                                {hasNewReg && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-500 border border-red-500/30 animate-pulse">
+                                        NEW
+                                    </span>
+                                )}
+                            </div>
                             <svg
                                 className={`w-4 h-4 transition-transform duration-200 ${isRegExpanded ? 'rotate-180' : ''}`}
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -242,6 +272,7 @@ export default function DashboardV2() {
 
                         {isRegExpanded && (
                             <div className="mt-2 space-y-1 pl-2">
+                                {/* 1. ALL */}
                                 <button
                                     onClick={() => {
                                         setCurrentCategory('regulation_notice')
@@ -253,19 +284,60 @@ export default function DashboardV2() {
                                     <span className="text-sm">전체</span>
                                 </button>
 
-                                {regAgencyOrder.map((code) => (
+                                {/* 2. FSC (Regulation) */}
+                                <button
+                                    onClick={() => {
+                                        setCurrentCategory('regulation_notice')
+                                        setSelectedAgency('FSC_REG')
+                                    }}
+                                    className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl transition-all ${currentCategory === 'regulation_notice' && selectedAgency === 'FSC_REG' ? 'text-white bg-[#3B82F6]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                >
+                                    {agencyIcons['FSC_REG']}
+                                    <span className="text-sm">금융위원회</span>
+                                </button>
+
+                                {/* 3. FSS (Group) */}
+                                <div className="mt-1">
                                     <button
-                                        key={code}
-                                        onClick={() => {
-                                            setCurrentCategory('regulation_notice')
-                                            setSelectedAgency(code)
-                                        }}
-                                        className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl transition-all ${currentCategory === 'regulation_notice' && selectedAgency === code ? 'text-white bg-[#3B82F6]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                        onClick={() => setIsFSSRegGroupExpanded(!isFSSRegGroupExpanded)}
+                                        className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl transition-all text-gray-400 hover:text-white hover:bg-white/5`}
                                     >
-                                        {agencyIcons[code]}
-                                        <span className="text-sm">{regAgencyNames[code]}</span>
+                                        <div className="flex items-center gap-3">
+                                            {agencyIcons['FSS']}
+                                            <span className="text-sm">금융감독원</span>
+                                        </div>
+                                        <svg
+                                            className={`w-3 h-3 transition-transform duration-200 ${isFSSRegGroupExpanded ? 'rotate-180' : ''}`}
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
                                     </button>
-                                ))}
+
+                                    {/* FSS Sub-menu */}
+                                    {isFSSRegGroupExpanded && (
+                                        <div className="mt-1 ml-4 border-l border-white/10 pl-2 space-y-1">
+                                            <button
+                                                onClick={() => {
+                                                    setCurrentCategory('regulation_notice')
+                                                    setSelectedAgency('FSS_REG')
+                                                }}
+                                                className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg transition-all text-xs ${currentCategory === 'regulation_notice' && selectedAgency === 'FSS_REG' ? 'text-white bg-white/10' : 'text-gray-500 hover:text-gray-300'}`}
+                                            >
+                                                <span>세칙 제개정 예고</span>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setCurrentCategory('regulation_notice')
+                                                    setSelectedAgency('FSS_REG_INFO')
+                                                }}
+                                                className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg transition-all text-xs ${currentCategory === 'regulation_notice' && selectedAgency === 'FSS_REG_INFO' ? 'text-white bg-white/10' : 'text-gray-500 hover:text-gray-300'}`}
+                                            >
+                                                <span>최근 제개정 정보</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </nav>
