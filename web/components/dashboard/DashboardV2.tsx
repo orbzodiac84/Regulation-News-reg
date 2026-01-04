@@ -56,6 +56,11 @@ export default function DashboardV2() {
             updateLastVisitTime();
         }, 3000); // 3 second delay before marking as "visited"
 
+        // Auto-open sidebar on mobile for first impression
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setIsMenuOpen(true);
+        }
+
         return () => clearTimeout(timer);
     }, [])
 
@@ -164,7 +169,7 @@ export default function DashboardV2() {
 
             {/* Drawer - Always visible on lg:, slide-in on mobile */}
             <aside className={`
-                fixed inset-y-0 left-0 w-[260px] bg-[#1E1E1E]/95 backdrop-blur-sm text-white z-[60] 
+                fixed inset-y-0 left-0 w-[260px] bg-[#1E1E1E]/80 backdrop-blur-md text-white z-[60] 
                 transform transition-transform duration-300 shadow-2xl
                 lg:translate-x-0 lg:static lg:z-auto
                 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}
