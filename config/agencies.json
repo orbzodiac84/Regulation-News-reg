@@ -69,6 +69,20 @@
         "link": ".subject a",
         "content": ".cont"
       }
+    },
+    {
+      "code": "FSS_REG_INFO",
+      "name": "금감원 (최근제개정정보)",
+      "category": "regulation_notice",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488",
+      "selector": {
+        "list": ".bd-list tbody tr",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(3)",
+        "link": "td:nth-child(2) a",
+        "content": ".bd-view"
+      }
     }
   ]
 }
