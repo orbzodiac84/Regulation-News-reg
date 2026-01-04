@@ -130,8 +130,7 @@ class ContentScraper:
                         pub_date = self._parse_date(date_str)
                         
                         if pub_date:
-                            force_collect = agency_config.get('code') in settings.FORCE_COLLECT_AGENCIES
-                            if force_collect or pub_date >= cutoff_date:
+                            if pub_date >= cutoff_date:
                                 page_items.append({
                                     'title': title,
                                     'link': link,
