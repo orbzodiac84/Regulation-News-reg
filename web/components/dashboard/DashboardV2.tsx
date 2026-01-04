@@ -206,7 +206,11 @@ export default function DashboardV2() {
 
                         {/* Collapsible Agency Section (Press Release) */}
                         <button
-                            onClick={() => setIsAgencyExpanded(!isAgencyExpanded)}
+                            onClick={() => {
+                                setIsAgencyExpanded(!isAgencyExpanded)
+                                setCurrentCategory('press_release')
+                                setSelectedAgency(null)
+                            }}
                             className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all relative"
                         >
                             <div className="flex items-center gap-2">
@@ -257,7 +261,11 @@ export default function DashboardV2() {
                         {/* Regulation Section */}
                         <div className="my-2 border-t border-white/5"></div>
                         <button
-                            onClick={() => setIsRegExpanded(!isRegExpanded)}
+                            onClick={() => {
+                                setIsRegExpanded(!isRegExpanded)
+                                setCurrentCategory('regulation_notice')
+                                setSelectedAgency(null)
+                            }}
                             className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
                         >
                             <div className="flex items-center gap-2">
