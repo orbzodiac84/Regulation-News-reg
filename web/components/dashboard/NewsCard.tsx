@@ -57,10 +57,20 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
         return map[code] || code
     }
 
+    // Detailed Category for Regulation
+    const getSubCategory = (code: string) => {
+        if (code === 'FSS_REG') return '세칙예고'
+        if (code === 'FSS_REG_INFO') return '최근정보'
+        if (code === 'FSC_REG') return '입법/규정'
+        return null
+    }
+
     // Time display (HH:mm)
     const timeStr = new Date(article.published_at).toLocaleTimeString('ko-KR', {
         hour: '2-digit', minute: '2-digit', hour12: false
     });
+
+    const subCat = getSubCategory(article.agency);
 
     return (
         <div
@@ -78,11 +88,19 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
             >
                 <div className="flex justify-between items-start gap-3">
                     <div className="flex-1">
-                        {/* Meta: Agency & Time */}
-                        <div className="flex items-center gap-2 mb-1.5">
+                        {/* Meta: Agency & Category & Time */}
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                             <span className={`px-2 py-0.5 text-[11px] font-bold rounded-md ${getAgencyColor(article.agency)}`}>
                                 {getAgencyName(article.agency)}
                             </span>
+
+                            {/* Sub Category Badge */}
+                            {subCat && (
+                                <span className="px-1.5 py-0.5 text-[10px] text-gray-500 bg-gray-100/50 border border-gray-200 rounded font-medium">
+                                    {subCat}
+                                </span>
+                            )}
+
                             <div className="w-0.5 h-2.5 bg-gray-200 rounded-full"></div>
                             <span className="text-xs text-gray-400 font-medium tracking-tight">
                                 {timeStr}
