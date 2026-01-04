@@ -22,15 +22,15 @@ export default function DateSection({ dateTitle, articles, onGenerateReport, def
         return counts;
     }, [articles]);
 
-    // Agency Styling Config (Cool Pastel - Visible Backgrounds)
+    // Agency Styling Config (Unified with NewsCard)
     const agencyConfig: Record<string, { name: string, className: string }> = {
-        'FSS': { name: '금감원', className: 'bg-blue-100 text-blue-600' },
-        'FSC': { name: '금융위', className: 'bg-sky-100 text-sky-600' },
-        'BOK': { name: '한은', className: 'bg-indigo-100 text-indigo-600' },
-        'MOEF': { name: '기재부', className: 'bg-slate-100 text-slate-600' },
-        'FSS_REG': { name: '금감원(예고)', className: 'bg-purple-100 text-purple-600' },
-        'FSC_REG': { name: '금융위(예고)', className: 'bg-pink-100 text-pink-600' },
-        'FSS_REG_INFO': { name: '금감원(정보)', className: 'bg-teal-100 text-teal-600' },
+        'FSS': { name: '금감원', className: 'bg-blue-100 text-blue-700' },
+        'FSC': { name: '금융위', className: 'bg-green-100 text-green-700' },
+        'BOK': { name: '한은', className: 'bg-purple-100 text-purple-700' },
+        'MOEF': { name: '기재부', className: 'bg-orange-100 text-orange-700' },
+        'FSS_REG': { name: '금감원', className: 'bg-blue-100 text-blue-700' },
+        'FSC_REG': { name: '금융위', className: 'bg-green-100 text-green-700' },
+        'FSS_REG_INFO': { name: '금감원', className: 'bg-blue-100 text-blue-700' },
     };
 
     return (
