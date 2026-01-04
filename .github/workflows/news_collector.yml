@@ -1,10 +1,10 @@
 name: News Collector
 
 on:
-  schedule:
-    # Run at minutes 5 and 35
-    - cron: '5,35 * * * *'
-  workflow_dispatch:  # Allow manual trigger
+  # DISABLED: Using v2 collector now (news_collector_v2_active.yml)
+  # schedule:
+  #   - cron: '5,35 * * * *'
+  workflow_dispatch:  # Allow manual trigger only
 
 jobs:
   collect-and-analyze:
