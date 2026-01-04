@@ -17,8 +17,8 @@ export default function DashboardV2() {
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedAgency, setSelectedAgency] = useState<string | null>(null) // Agency filter
     const [currentCategory, setCurrentCategory] = useState<'press_release' | 'regulation_notice'>('press_release') // Category filter
-    const [isAgencyExpanded, setIsAgencyExpanded] = useState(true) // Collapsible agency section (Press Release)
-    const [isRegExpanded, setIsRegExpanded] = useState(true) // Collapsible regulation section
+    const [isAgencyExpanded, setIsAgencyExpanded] = useState(false) // Collapsible agency section (Press Release)
+    const [isRegExpanded, setIsRegExpanded] = useState(false) // Collapsible regulation section
 
     // Modal State
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
@@ -141,14 +141,14 @@ export default function DashboardV2() {
             {/* Mobile Backdrop */}
             {isMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 md:hidden"
+                    className="fixed inset-0 bg-black/40 z-50 transition-opacity duration-300 md:hidden"
                     onClick={() => setIsMenuOpen(false)}
                 />
             )}
 
             {/* Drawer - Always visible on lg:, slide-in on mobile */}
             <aside className={`
-                fixed inset-y-0 left-0 w-[260px] bg-[#1E1E1E] text-white z-[60] 
+                fixed inset-y-0 left-0 w-[260px] bg-[#1E1E1E]/95 backdrop-blur-sm text-white z-[60] 
                 transform transition-transform duration-300 shadow-2xl
                 lg:translate-x-0 lg:static lg:z-auto
                 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -187,7 +187,7 @@ export default function DashboardV2() {
                             onClick={() => setIsAgencyExpanded(!isAgencyExpanded)}
                             className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
                         >
-                            <span className="font-medium">기관별 보도자료</span>
+                            <span className="font-medium">보도자료</span>
                             <svg
                                 className={`w-4 h-4 transition-transform duration-200 ${isAgencyExpanded ? 'rotate-180' : ''}`}
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -231,7 +231,7 @@ export default function DashboardV2() {
                             onClick={() => setIsRegExpanded(!isRegExpanded)}
                             className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
                         >
-                            <span className="font-medium">금융법규제개정예고</span>
+                            <span className="font-medium">규제개정</span>
                             <svg
                                 className={`w-4 h-4 transition-transform duration-200 ${isRegExpanded ? 'rotate-180' : ''}`}
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
