@@ -71,10 +71,20 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
         # Extract fields
         title = entry.get('title', '').strip()
         link = entry.get('link', '').strip()
-        published = entry.get('published', '')
         
-        # Date parsing
+        # Date parsing - try 'published' first, then 'updated' as fallback
+        published = entry.get('published', '') or entry.get('updated', '')
+        
+        # FSC RSS uses 'YYYY-MM-DD HH:MM:SS' format in 'updated' field
         published_at = parse_date(published)
+        if not published_at and published:
+            # Try parsing FSC format: "2026-01-02 00:00:00"
+            try:
+                from datetime import datetime as dt
+                parsed = dt.strptime(published, '%Y-%m-%d %H:%M:%S')
+                published_at = parsed.replace(tzinfo=KST)
+            except ValueError:
+                pass
         
         # Get ID (support 'code' or 'id')
         agency_id = agency.get('code') or agency.get('id')
