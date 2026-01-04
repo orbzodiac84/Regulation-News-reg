@@ -36,22 +36,23 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
 
     // Badge Color for Agency
     const getAgencyColor = (agency: string) => {
-        switch (agency) {
-            case 'FSS': return 'bg-blue-100 text-blue-700'
-            case 'BOK': return 'bg-purple-100 text-purple-700'
-            case 'FSC': return 'bg-green-100 text-green-700'
-            case 'MOEF': return 'bg-orange-100 text-orange-700'
-            default: return 'bg-gray-100 text-gray-600'
-        }
+        if (agency.includes('FSS')) return 'bg-blue-100 text-blue-700'
+        if (agency.includes('FSC')) return 'bg-green-100 text-green-700'
+        if (agency.includes('BOK')) return 'bg-purple-100 text-purple-700'
+        if (agency.includes('MOEF')) return 'bg-orange-100 text-orange-700'
+        return 'bg-gray-100 text-gray-600'
     }
 
     // Agency Name Mapping (EN -> KR)
     const getAgencyName = (code: string) => {
+        if (code === 'FSC_REG') return '금융위'
+        if (code.startsWith('FSS_REG')) return '금감원'
+
         const map: Record<string, string> = {
-            'FSC': '금융위원회',
-            'FSS': '금융감독원',
-            'MOEF': '기획재정부',
-            'BOK': '한국은행'
+            'FSC': '금융위',
+            'FSS': '금감원',
+            'MOEF': '기재부',
+            'BOK': '한은'
         }
         return map[code] || code
     }

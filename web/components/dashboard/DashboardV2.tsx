@@ -58,7 +58,8 @@ export default function DashboardV2() {
 
         // Auto-open sidebar on mobile for first impression
         if (typeof window !== 'undefined' && window.innerWidth < 768) {
-            setIsMenuOpen(true);
+            // Small delay to ensure render cycle completes
+            setTimeout(() => setIsMenuOpen(true), 100);
         }
 
         return () => clearTimeout(timer);
