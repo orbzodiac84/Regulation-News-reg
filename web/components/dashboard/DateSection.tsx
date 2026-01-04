@@ -28,6 +28,9 @@ export default function DateSection({ dateTitle, articles, onGenerateReport, def
         'FSC': { name: '금융위', className: 'bg-sky-100 text-sky-600' },
         'BOK': { name: '한은', className: 'bg-indigo-100 text-indigo-600' },
         'MOEF': { name: '기재부', className: 'bg-slate-100 text-slate-600' },
+        'FSS_REG': { name: '금감원(예고)', className: 'bg-purple-100 text-purple-600' },
+        'FSC_REG': { name: '금융위(예고)', className: 'bg-pink-100 text-pink-600' },
+        'FSS_REG_INFO': { name: '금감원(정보)', className: 'bg-teal-100 text-teal-600' },
     };
 
     return (
