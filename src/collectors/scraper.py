@@ -235,7 +235,13 @@ class ContentScraper:
             # KST Timezone Definition
             kst = pytz.timezone('Asia/Seoul')
             
-            # Clean up: remove "등록일" etc, keep only digits, dots, hyphens
+            # Try format: YYYYMMDD (no separator, used by FSS sanction notices)
+            match_no_sep = re.search(r'^(\d{8})$', date_str.strip())
+            if match_no_sep:
+                dt = datetime.strptime(match_no_sep.group(1), '%Y%m%d')
+                return kst.localize(dt)
+            
+            # Try format: YYYY-MM-DD or YYYY.MM.DD
             match = re.search(r'(\d{4}[.-]\d{2}[.-]\d{2})', date_str)
             
             clean_date_str = ""
