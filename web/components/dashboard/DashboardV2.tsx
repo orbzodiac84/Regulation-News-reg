@@ -16,7 +16,7 @@ export default function DashboardV2() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedAgency, setSelectedAgency] = useState<string | null>(null) // Agency filter
-    const [currentCategory, setCurrentCategory] = useState<'press_release' | 'regulation_notice'>('press_release') // Category filter
+    const [currentCategory, setCurrentCategory] = useState<'press_release' | 'regulation_notice' | 'sanction_notice'>('press_release') // Category filter
 
     // UI State
     const [isAgencyExpanded, setIsAgencyExpanded] = useState(false) // Collapsible agency section (Press Release)
@@ -24,6 +24,7 @@ export default function DashboardV2() {
     const [isFSSRegGroupExpanded, setIsFSSRegGroupExpanded] = useState(false) // Nested collapsible FSS section in Regulation
     const [isReportModalOpen, setIsReportModalOpen] = useState(false)
     const [isMenuOpen, setIsMenuOpen] = useState(false) // Sidebar toggle
+    const [isSanctionExpanded, setIsSanctionExpanded] = useState(false) // Collapsible sanction section
     const [viewMode, setViewMode] = useState<'date' | 'list'>('date') // View Toggle State
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
     const [lastVisitTime, setLastVisitTime] = useState<Date | null>(null) // For NEW badge tracking
@@ -39,6 +40,13 @@ export default function DashboardV2() {
     const hasNewReg = useMemo(() => {
         return articles.some(a =>
             a.category === 'regulation_notice' &&
+            isArticleNew(a.created_at || a.published_at, lastVisitTime)
+        )
+    }, [articles, lastVisitTime])
+
+    const hasNewSanction = useMemo(() => {
+        return articles.some(a =>
+            a.category === 'sanction_notice' &&
             isArticleNew(a.created_at || a.published_at, lastVisitTime)
         )
     }, [articles, lastVisitTime])
@@ -145,6 +153,13 @@ export default function DashboardV2() {
         'FSS_REG_INFO': '금감원 - 최근 제개정 정보'
     }
 
+    // Sanction Agencies
+    const sanctionAgencyOrder = ['FSS_SANCTION', 'FSS_MGMT_NOTICE']
+    const sanctionAgencyNames: Record<string, string> = {
+        'FSS_SANCTION': '검사결과 제재',
+        'FSS_MGMT_NOTICE': '경영유의사항'
+    }
+
     // Agency Icon Mapping (FSC = Gavel + Coin icon)
     const agencyIcons: Record<string, React.ReactNode> = {
         'MOEF': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
@@ -154,6 +169,8 @@ export default function DashboardV2() {
         'FSC_REG': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /><circle cx="17" cy="17" r="4" strokeWidth={1.5} /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 15.5v3M15.5 17h3" /></svg>,
         'FSS_REG': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
         'FSS_REG_INFO': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+        'FSS_SANCTION': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
+        'FSS_MGMT_NOTICE': <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>,
     }
 
     // Sidebar Content (StockEasy Style: Dark Theme)
@@ -352,6 +369,61 @@ export default function DashboardV2() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Sanction Notice Section */}
+                        <div className="my-2 border-t border-white/5"></div>
+                        <button
+                            onClick={() => {
+                                setIsSanctionExpanded(!isSanctionExpanded)
+                                setCurrentCategory('sanction_notice')
+                                setSelectedAgency(null)
+                            }}
+                            className="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">제재 공시</span>
+                                {hasNewSanction && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-500 border border-red-500/30 animate-pulse">
+                                        NEW
+                                    </span>
+                                )}
+                            </div>
+                            <svg
+                                className={`w-4 h-4 transition-transform duration-200 ${isSanctionExpanded ? 'rotate-180' : ''}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        {isSanctionExpanded && (
+                            <div className="mt-2 space-y-1 pl-2">
+                                <button
+                                    onClick={() => {
+                                        setCurrentCategory('sanction_notice')
+                                        setSelectedAgency(null)
+                                    }}
+                                    className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl transition-all ${currentCategory === 'sanction_notice' && selectedAgency === null ? 'text-white bg-[#3B82F6]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                    <span className="text-sm">전체</span>
+                                </button>
+
+                                {sanctionAgencyOrder.map((code) => (
+                                    <button
+                                        key={code}
+                                        onClick={() => {
+                                            setCurrentCategory('sanction_notice')
+                                            setSelectedAgency(code)
+                                        }}
+                                        className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl transition-all ${currentCategory === 'sanction_notice' && selectedAgency === code ? 'text-white bg-[#3B82F6]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                    >
+                                        {agencyIcons[code]}
+                                        <span className="text-sm">{sanctionAgencyNames[code]}</span>
+                                    </button>
+                                ))}
                             </div>
                         )}
                     </nav>
