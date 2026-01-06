@@ -3,10 +3,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-// Initialize Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+// Initialize Supabase (V2 - Production Database)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL_V2!
 // Use Service Role Key for server-side updates (bypasses RLS)
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_V2!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Initialize Gemini
