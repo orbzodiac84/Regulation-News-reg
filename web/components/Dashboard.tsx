@@ -11,6 +11,8 @@ interface Article {
     link: string
     agency: string
     published_at: string
+    category?: 'press_release' | 'regulation_notice' | 'sanction_notice'
+    pdf_url?: string  // For sanction notices
     analysis_result?: AnalysisResult
     content?: string // Added for report generation
 }
@@ -86,6 +88,7 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
     const [articles, setArticles] = useState<Article[]>(initialArticles)
     const [selectedAgency, setSelectedAgency] = useState('All')
     const [selectedRisk, setSelectedRisk] = useState('All')
+    const [selectedCategory, setSelectedCategory] = useState<'all' | 'press_release' | 'regulation_notice' | 'sanction_notice'>('all')
     const [loading, setLoading] = useState(initialArticles.length === 0)
     const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline') // Default to Timeline
 
@@ -267,6 +270,8 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
             case 'FSS': return 'bg-blue-100 text-blue-700'
             case 'MOEF': return 'bg-slate-100 text-slate-700'
             case 'BOK': return 'bg-indigo-100 text-indigo-700'
+            case 'FSS_SANCTION': return 'bg-red-100 text-red-700'
+            case 'FSS_MGMT_NOTICE': return 'bg-orange-100 text-orange-700'
             default: return 'bg-gray-100 text-gray-700'
         }
     }
@@ -277,15 +282,34 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
         'MOEF': '기획재정부',
         'FSC': '금융위원회',
         'FSS': '금융감독원',
-        'BOK': '한국은행'
+        'BOK': '한국은행',
+        'FSS_SANCTION': '검사결과 제재',
+        'FSS_MGMT_NOTICE': '경영유의사항'
     }
 
     const agencies = ['All', 'FSC', 'FSS', 'MOEF', 'BOK']
 
+    // Category definitions
+    const categories = [
+        { key: 'all', label: '전체', icon: '📋' },
+        { key: 'press_release', label: '보도자료', icon: '📰' },
+        { key: 'regulation_notice', label: '규제개정', icon: '📜' },
+        { key: 'sanction_notice', label: '제재 공시', icon: '⚠️' }
+    ]
+
     // Filter Logic
     const filteredAndSortedArticles = articles
         .filter(article => {
+            // Category Filter (NEW)
+            if (selectedCategory !== 'all') {
+                const articleCategory = article.category || 'press_release'
+                if (articleCategory !== selectedCategory) return false
+            }
+
             if (selectedAgency !== 'All' && article.agency !== selectedAgency) return false
+
+            // For sanction notices, skip score filtering (show all)
+            if (article.category === 'sanction_notice') return true
 
             const rawScore = article.analysis_result?.importance_score
             const score = typeof rawScore === 'number' ? rawScore : null
@@ -513,46 +537,104 @@ export default function Dashboard({ initialArticles = [] }: DashboardProps) {
             <div className="max-w-7xl mx-auto flex pt-16 min-h-screen">
                 {/* Left Sidebar */}
                 <aside className="hidden md:block w-64 fixed h-full border-r border-slate-100 px-4 py-6 overflow-y-auto">
-                    <div className="space-y-8">
+                    <div className="space-y-6">
+                        {/* Category Navigation */}
                         <div>
-                            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-3 flex items-center gap-2">
-                                <Icons.Home /> Sources
-                            </h2>
+                            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-3">카테고리</h2>
                             <nav className="space-y-1">
-                                {agencies.map(agency => (
+                                {categories.map(cat => (
                                     <button
-                                        key={agency}
-                                        onClick={() => setSelectedAgency(agency)}
-                                        className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${selectedAgency === agency
+                                        key={cat.key}
+                                        onClick={() => {
+                                            setSelectedCategory(cat.key as any)
+                                            setSelectedAgency('All')
+                                        }}
+                                        className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${selectedCategory === cat.key
                                             ? 'bg-sky-50 text-sky-600'
                                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                             }`}
                                     >
-                                        <span>{agencyDisplayNames[agency]}</span>
-                                        {selectedAgency === agency && (
+                                        <span className="flex items-center gap-2">
+                                            <span>{cat.icon}</span>
+                                            <span>{cat.label}</span>
+                                        </span>
+                                        {selectedCategory === cat.key && (
                                             <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
                                         )}
                                     </button>
                                 ))}
                             </nav>
                         </div>
+
+                        {/* Source Filter (Only show for non-sanction categories) */}
+                        {selectedCategory !== 'sanction_notice' && (
+                            <div>
+                                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-3 flex items-center gap-2">
+                                    <Icons.Home /> 기관 필터
+                                </h2>
+                                <nav className="space-y-1">
+                                    {agencies.map(agency => (
+                                        <button
+                                            key={agency}
+                                            onClick={() => setSelectedAgency(agency)}
+                                            className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${selectedAgency === agency
+                                                ? 'bg-sky-50 text-sky-600'
+                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                                }`}
+                                        >
+                                            <span>{agencyDisplayNames[agency]}</span>
+                                            {selectedAgency === agency && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+                        )}
+
+                        {/* Sanction sub-filter */}
+                        {selectedCategory === 'sanction_notice' && (
+                            <div>
+                                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-3">제재 유형</h2>
+                                <nav className="space-y-1">
+                                    {['All', 'FSS_SANCTION', 'FSS_MGMT_NOTICE'].map(agency => (
+                                        <button
+                                            key={agency}
+                                            onClick={() => setSelectedAgency(agency)}
+                                            className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${selectedAgency === agency
+                                                ? 'bg-sky-50 text-sky-600'
+                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                                }`}
+                                        >
+                                            <span>{agencyDisplayNames[agency] || agency}</span>
+                                            {selectedAgency === agency && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+                        )}
                     </div>
                 </aside>
 
                 {/* Main Content */}
                 <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-4xl min-w-0 overflow-x-hidden">
-                    {/* Mobile Filters - Horizontal Scroll */}
+                    {/* Mobile Filters - Category Pills */}
                     <div className="md:hidden overflow-x-auto flex gap-2 mb-4 pb-2 -mx-4 px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-                        {agencies.map(agency => (
+                        {categories.map(cat => (
                             <button
-                                key={agency}
-                                onClick={() => setSelectedAgency(agency)}
-                                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors border ${selectedAgency === agency
+                                key={cat.key}
+                                onClick={() => {
+                                    setSelectedCategory(cat.key as any)
+                                    setSelectedAgency('All')
+                                }}
+                                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors border ${selectedCategory === cat.key
                                     ? 'bg-sky-500 text-white border-sky-500 shadow-sm'
                                     : 'bg-white text-slate-600 border-slate-200'
                                     }`}
                             >
-                                {agencyDisplayNames[agency]}
+                                {cat.icon} {cat.label}
                             </button>
                         ))}
                     </div>

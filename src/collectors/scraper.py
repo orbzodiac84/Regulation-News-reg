@@ -256,6 +256,184 @@ class ContentScraper:
         except ValueError:
             return None
 
+    def fetch_sanction_items(self, agency_config: Dict) -> List[Dict]:
+        """
+        Fetches sanction notice items from FSS.
+        This method is specifically for FSS_SANCTION and FSS_MGMT_NOTICE.
+        Filters by bank/financial holding/NH keywords and excludes savings banks.
+        
+        Returns list of items with pdf_url field for direct PDF access.
+        """
+        code = agency_config.get('code', '')
+        
+        # Only process sanction notice agencies
+        if code not in ['FSS_SANCTION', 'FSS_MGMT_NOTICE']:
+            return []
+        
+        base_url = agency_config.get('url')
+        base_domain = agency_config.get('base_url', 'https://www.fss.or.kr')
+        filter_keywords = agency_config.get('filter_keywords', [])
+        exclude_keywords = agency_config.get('exclude_keywords', [])
+        
+        if not base_url:
+            logger.error(f"[{code}] Missing URL.")
+            return []
+        
+        import pytz
+        from urllib.parse import urljoin
+        kst = pytz.timezone('Asia/Seoul')
+        now_kst = datetime.now(kst)
+        cutoff_date = now_kst - timedelta(days=30)  # Sanctions are less frequent, use 30 days
+        
+        # Build URL with date parameters
+        today_str = now_kst.strftime('%Y-%m-%d')
+        week_ago_str = cutoff_date.strftime('%Y-%m-%d')
+        
+        sep = "&" if "?" in base_url else "?"
+        full_url = f"{base_url}{sep}sdate={week_ago_str}&edate={today_str}"
+        
+        logger.info(f"[{code}] Fetching sanction notices from {full_url}")
+        
+        all_items = []
+        page = 1
+        max_pages = 10
+        
+        while page <= max_pages:
+            page_url = f"{full_url}&pageIndex={page}"
+            
+            try:
+                time.sleep(random.uniform(1.0, 2.0))
+                response = requests.get(page_url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=settings.SSL_VERIFY)
+                response.raise_for_status()
+                
+                soup = BeautifulSoup(response.content, 'html.parser')
+                
+                # Find all list items (table rows)
+                items = soup.select('tbody tr')
+                
+                if not items:
+                    logger.info(f"  [{code}] No items found on page {page}. Stopping.")
+                    break
+                
+                page_items = []
+                
+                for item in items:
+                    try:
+                        # Extract institution name (제재대상기관) - 2nd column
+                        inst_elem = item.select_one('td:nth-child(2)')
+                        if not inst_elem:
+                            continue
+                        
+                        # Remove mobile-only spans and get clean text
+                        for span in inst_elem.select('span.only-m'):
+                            span.decompose()
+                        institution = inst_elem.get_text(strip=True)
+                        
+                        if not institution:
+                            continue
+                        
+                        # Apply filter: must contain at least one filter keyword
+                        if filter_keywords:
+                            if not any(kw in institution for kw in filter_keywords):
+                                continue
+                        
+                        # Apply exclude: must not contain any exclude keyword
+                        if exclude_keywords:
+                            if any(kw in institution for kw in exclude_keywords):
+                                continue
+                        
+                        # Extract date (제재조치요구일) - 3rd column
+                        date_elem = item.select_one('td:nth-child(3)')
+                        date_str = ""
+                        if date_elem:
+                            for span in date_elem.select('span.only-m'):
+                                span.decompose()
+                            date_str = date_elem.get_text(strip=True)
+                        
+                        # Extract link to detail page or PDF - 4th column
+                        link_elem = item.select_one('td:nth-child(4) a')
+                        if not link_elem:
+                            link_elem = item.select_one('a[href*="view.do"]')
+                        if not link_elem:
+                            link_elem = item.select_one('a[href*="hpdownload"]')
+                        
+                        if link_elem:
+                            href = link_elem.get('href', '')
+                            if not href.startswith('http'):
+                                link = urljoin(base_domain, href)
+                            else:
+                                link = href
+                        else:
+                            continue
+                        
+                        # Parse date
+                        pub_date = self._parse_date(date_str)
+                        if not pub_date:
+                            pub_date = now_kst
+                        
+                        # Check if PDF link (경영유의사항 has direct PDF links)
+                        pdf_url = None
+                        if 'hpdownload' in link:
+                            pdf_url = link
+                        else:
+                            # Need to fetch detail page to get PDF (검사결과 제재)
+                            pdf_url = self._extract_pdf_from_detail(link, base_domain)
+                        
+                        page_items.append({
+                            'title': institution,
+                            'link': link,
+                            'published_at': pub_date.isoformat(),
+                            'agency': code,
+                            'category': 'sanction_notice',
+                            'pdf_url': pdf_url
+                        })
+                        
+                    except Exception as e:
+                        logger.error(f"Error parsing sanction item: {e}")
+                        continue
+                
+                if page_items:
+                    all_items.extend(page_items)
+                    logger.info(f"  [{code}] Found {len(page_items)} matching items on page {page}.")
+                
+                if len(items) < 5:
+                    break
+                    
+                page += 1
+                
+            except Exception as e:
+                logger.error(f"[{code}] Error fetching page {page}: {e}")
+                break
+        
+        logger.info(f"[{code}] Total collected: {len(all_items)} sanction notices.")
+        return all_items
+
+    def _extract_pdf_from_detail(self, detail_url: str, base_domain: str) -> Optional[str]:
+        """
+        Fetches detail page and extracts PDF download link.
+        """
+        try:
+            time.sleep(random.uniform(0.5, 1.0))
+            response = requests.get(detail_url, headers=self.headers, timeout=settings.SCRAPER_TIMEOUT, verify=settings.SSL_VERIFY)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Find PDF download link
+            pdf_link = soup.select_one('a[href*="hpdownload"]')
+            if pdf_link:
+                href = pdf_link.get('href', '')
+                if not href.startswith('http'):
+                    from urllib.parse import urljoin
+                    return urljoin(base_domain, href)
+                return href
+            
+            return None
+            
+        except Exception as e:
+            logger.debug(f"Could not extract PDF from {detail_url}: {e}")
+            return None
+
 if __name__ == "__main__":
     # Test with a real URL (using FSC item if available or hardcoded)
     test_agency = {

@@ -90,6 +90,54 @@
         "link": "td:nth-child(2) a",
         "content": ".bd-view"
       }
+    },
+    {
+      "code": "FSS_SANCTION",
+      "name": "검사결과 제재",
+      "category": "sanction_notice",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr/fss/job/openInfo/list.do?menuNo=200476",
+      "base_url": "https://www.fss.or.kr",
+      "filter_keywords": [
+        "은행",
+        "금융지주",
+        "농협"
+      ],
+      "exclude_keywords": [
+        "저축은행"
+      ],
+      "selector": {
+        "list": ".bd-list dl",
+        "title": "dt:contains('제재대상기관') + dd",
+        "date": "dt:contains('제재조치요구일') + dd",
+        "link": "a.b-default",
+        "content": ".bd-view",
+        "pdf_link": "a[href*='hpdownload']"
+      }
+    },
+    {
+      "code": "FSS_MGMT_NOTICE",
+      "name": "경영유의사항",
+      "category": "sanction_notice",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr/fss/job/openInfoImpr/list.do?menuNo=200483",
+      "base_url": "https://www.fss.or.kr",
+      "filter_keywords": [
+        "은행",
+        "금융지주",
+        "농협"
+      ],
+      "exclude_keywords": [
+        "저축은행"
+      ],
+      "selector": {
+        "list": ".bd-list dl",
+        "title": "dt:contains('제재대상기관') + dd",
+        "date": "dt:contains('제재조치요구일') + dd",
+        "link": "a.b-default",
+        "content": ".bd-view",
+        "pdf_link": "a[href*='hpdownload']"
+      }
     }
   ]
 }
