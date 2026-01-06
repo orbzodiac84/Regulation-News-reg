@@ -110,6 +110,11 @@ class Pipeline:
         scraper_targets = [a for a in self.agency_map.values() if a.get('collection_method') == 'scraper']
         for agency in scraper_targets:
             agency_id = agency.get('code') or agency.get('id')
+            
+            # Skip sanction notice agencies here (they use a different method)
+            if agency_id in ['FSS_SANCTION', 'FSS_MGMT_NOTICE']:
+                continue
+            
             logger.info(f"Starting HTML scraping for {agency_id}...")
             
             last_date = self._get_last_crawled_date(agency_id)
@@ -119,6 +124,18 @@ class Pipeline:
                 all_items.extend(scraped_items)
             except Exception as e:
                 logger.error(f"Scraping failed for {agency_id}: {e}")
+
+        # 3. Sanction Notice Collection (separate handling)
+        sanction_targets = [a for a in self.agency_map.values() if a.get('code') in ['FSS_SANCTION', 'FSS_MGMT_NOTICE']]
+        for agency in sanction_targets:
+            agency_id = agency.get('code')
+            logger.info(f"Starting sanction notice scraping for {agency_id}...")
+            try:
+                sanction_items = self.scraper.fetch_sanction_items(agency)
+                logger.info(f"  > Collected {len(sanction_items)} sanction notices from {agency_id}.")
+                all_items.extend(sanction_items)
+            except Exception as e:
+                logger.error(f"Sanction scraping failed for {agency_id}: {e}")
 
         if not all_items:
             logger.warning("No new items found from any source.")
