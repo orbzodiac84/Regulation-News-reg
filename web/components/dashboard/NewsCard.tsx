@@ -35,7 +35,10 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
     const score = article.star_rating ?? article.analysis_result?.importance_score ?? 3
 
     // Badge Color for Agency
+    // Badge Color for Agency
     const getAgencyColor = (agency: string) => {
+        if (agency === 'FSS_SANCTION') return 'bg-red-100 text-red-700'
+        if (agency === 'FSS_MGMT_NOTICE') return 'bg-orange-100 text-orange-700'
         if (agency.includes('FSS')) return 'bg-blue-100 text-blue-700'
         if (agency.includes('FSC')) return 'bg-green-100 text-green-700'
         if (agency.includes('BOK')) return 'bg-purple-100 text-purple-700'
@@ -44,7 +47,10 @@ export default function NewsCard({ article, onGenerateReport }: NewsCardProps) {
     }
 
     // Agency Name Mapping (EN -> KR)
+    // Agency Name Mapping (EN -> KR)
     const getAgencyName = (code: string) => {
+        if (code === 'FSS_SANCTION') return '검사결과 제재'
+        if (code === 'FSS_MGMT_NOTICE') return '경영유의사항'
         if (code === 'FSC_REG') return '금융위'
         if (code.startsWith('FSS_REG')) return '금감원'
 

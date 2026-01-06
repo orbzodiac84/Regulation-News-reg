@@ -31,6 +31,8 @@ export default function DateSection({ dateTitle, articles, onGenerateReport, def
         'FSS_REG': { name: '금감원', className: 'bg-blue-100 text-blue-700' },
         'FSC_REG': { name: '금융위', className: 'bg-green-100 text-green-700' },
         'FSS_REG_INFO': { name: '금감원', className: 'bg-blue-100 text-blue-700' },
+        'FSS_SANCTION': { name: '검사결과 제재', className: 'bg-red-100 text-red-700' },
+        'FSS_MGMT_NOTICE': { name: '경영유의사항', className: 'bg-orange-100 text-orange-700' },
     };
 
     return (
