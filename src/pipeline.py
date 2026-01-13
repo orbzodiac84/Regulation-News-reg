@@ -76,6 +76,39 @@ class Pipeline:
             logger.error(f"DB Check failed: {e}")
             return False
 
+    def _is_sanction_duplicate(self, link, agency_id):
+        """
+        Sanction-specific duplicate check using examMgmtNo and emOpenSeq.
+        FSS sanction URLs have varying date params, so we extract the unique IDs.
+        """
+        if not self.supabase:
+            return False
+        try:
+            from urllib.parse import urlparse, parse_qs
+            parsed = urlparse(link)
+            params = parse_qs(parsed.query)
+            
+            exam_id = params.get('examMgmtNo', [None])[0]
+            seq = params.get('emOpenSeq', [None])[0]
+            
+            if exam_id and seq:
+                # Check if this exact sanction already exists
+                existing = self.supabase.table('articles').select('id, link').eq('agency', agency_id).execute()
+                for record in existing.data:
+                    existing_parsed = urlparse(record['link'])
+                    existing_params = parse_qs(existing_parsed.query)
+                    existing_exam = existing_params.get('examMgmtNo', [None])[0]
+                    existing_seq = existing_params.get('emOpenSeq', [None])[0]
+                    if existing_exam == exam_id and existing_seq == seq:
+                        return True
+                return False
+            else:
+                # Fallback to standard link check for PDF links or other formats
+                return self._is_duplicate(link)
+        except Exception as e:
+            logger.error(f"Sanction duplicate check failed: {e}")
+            return False
+
     def _save_to_db(self, item):
         if not self.supabase:
             return
@@ -154,10 +187,15 @@ class Pipeline:
         title = item['title']
         link = item['link']
         
-        # Deduplication
-        if self._is_duplicate(link):
-            logger.debug(f"Skipping duplicate: {title[:30]}...")
-            return
+        # Deduplication (use sanction-specific check for sanction agencies)
+        if agency_id in ['FSS_SANCTION', 'FSS_MGMT_NOTICE']:
+            if self._is_sanction_duplicate(link, agency_id):
+                logger.debug(f"Skipping duplicate sanction: {title[:30]}...")
+                return
+        else:
+            if self._is_duplicate(link):
+                logger.debug(f"Skipping duplicate: {title[:30]}...")
+                return
 
         logger.info(f"Processing: [{agency_id}] {title}")
 
