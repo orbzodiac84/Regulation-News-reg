@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 
-export async function POST(request: Request) {
+const WORKFLOW_FILE = 'news_collector_v2_active.yml'
+
+export async function POST() {
     try {
         // Get GitHub token from environment
         const githubToken = process.env.GITHUB_TOKEN
@@ -14,7 +16,7 @@ export async function POST(request: Request) {
 
         // Trigger GitHub Actions workflow
         const response = await fetch(
-            'https://api.github.com/repos/orbzodiac84/Regulation-News-reg/actions/workflows/news_collector.yml/dispatches',
+            `https://api.github.com/repos/orbzodiac84/Regulation-News-reg/actions/workflows/${WORKFLOW_FILE}/dispatches`,
             {
                 method: 'POST',
                 headers: {

@@ -12,6 +12,10 @@ import ReportModal from '@/components/ReportModal' // Reuse existing modal
 import NewsCard, { Article } from './NewsCard'
 
 export default function DashboardV2() {
+    const pressAgencies = ['MOEF', 'FSC', 'FSS', 'BOK']
+    const regulationAgencies = ['FSC_REG', 'FSS_REG', 'FSS_REG_INFO']
+    const sanctionAgencies = ['FSS_SANCTION', 'FSS_MGMT_NOTICE']
+
     const [articles, setArticles] = useState<Article[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
@@ -51,6 +55,52 @@ export default function DashboardV2() {
         )
     }, [articles, lastVisitTime])
 
+    const fetchArticles = async () => {
+        setLoading(true)
+
+        const [pressResult, regulationResult, sanctionResult] = await Promise.all([
+            supabase
+                .from('articles')
+                .select('*')
+                .in('agency', pressAgencies)
+                .or('category.eq.press_release,category.is.null')
+                .order('published_at', { ascending: false })
+                .limit(1000),
+            supabase
+                .from('articles')
+                .select('*')
+                .in('agency', regulationAgencies)
+                .eq('category', 'regulation_notice')
+                .order('published_at', { ascending: false })
+                .limit(1000),
+            supabase
+                .from('articles')
+                .select('*')
+                .in('agency', sanctionAgencies)
+                .eq('category', 'sanction_notice')
+                .order('published_at', { ascending: false })
+                .limit(1000)
+        ])
+
+        const errors = [pressResult.error, regulationResult.error, sanctionResult.error].filter(Boolean)
+        if (errors.length > 0) {
+            console.error('Error fetching articles:', errors)
+        }
+
+        const mergedArticles = [
+            ...(pressResult.data || []),
+            ...(regulationResult.data || []),
+            ...(sanctionResult.data || [])
+        ]
+
+        const dedupedArticles = Array.from(
+            new Map(mergedArticles.map(article => [article.id, article])).values()
+        ).sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+
+        setArticles(dedupedArticles)
+        setLoading(false)
+    }
+
     // 1. Fetch Data & Track Visit
     useEffect(() => {
         // Get last visit time BEFORE updating (to show NEW badges correctly)
@@ -72,22 +122,6 @@ export default function DashboardV2() {
 
         return () => clearTimeout(timer);
     }, [])
-
-    const fetchArticles = async () => {
-        setLoading(true)
-        const { data, error } = await supabase
-            .from('articles')
-            .select('*')
-            .order('published_at', { ascending: false })
-            .limit(1000)
-
-        if (error) {
-            console.error('Error fetching articles:', error)
-        } else {
-            setArticles(data || [])
-        }
-        setLoading(false)
-    }
 
     // 2. Filter & Group Data
     const processedData = useMemo(() => {
@@ -137,7 +171,7 @@ export default function DashboardV2() {
     }
 
     // Agency Mapping (EN -> KR) - Reordered: MOEF, FSC, FSS, BOK
-    const agencyOrder = ['MOEF', 'FSC', 'FSS', 'BOK']
+    const agencyOrder = pressAgencies
     const agencyNames: Record<string, string> = {
         'MOEF': '기획재정부',
         'FSC': '금융위원회',
@@ -146,7 +180,7 @@ export default function DashboardV2() {
     }
 
     // Regulation Agencies (FSS has two sub-categories)
-    const regAgencyOrder = ['FSC_REG', 'FSS_REG', 'FSS_REG_INFO']
+    const regAgencyOrder = regulationAgencies
     const regAgencyNames: Record<string, string> = {
         'FSC_REG': '금융위원회',
         'FSS_REG': '금감원 - 세칙 제개정 예고',
@@ -154,7 +188,7 @@ export default function DashboardV2() {
     }
 
     // Sanction Agencies
-    const sanctionAgencyOrder = ['FSS_SANCTION', 'FSS_MGMT_NOTICE']
+    const sanctionAgencyOrder = sanctionAgencies
     const sanctionAgencyNames: Record<string, string> = {
         'FSS_SANCTION': '검사결과 제재',
         'FSS_MGMT_NOTICE': '경영유의사항'

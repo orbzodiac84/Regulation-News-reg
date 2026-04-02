@@ -1,5 +1,13 @@
 import { NextResponse } from 'next/server'
 
+const WORKFLOW_FILE = 'news_collector_v2_active.yml'
+
+type WorkflowRun = {
+    status: string
+    conclusion: string | null
+    html_url: string
+}
+
 export async function GET() {
     try {
         const githubToken = process.env.GITHUB_TOKEN
@@ -10,7 +18,7 @@ export async function GET() {
 
         // Get recent runs (check for in_progress first)
         const response = await fetch(
-            'https://api.github.com/repos/orbzodiac84/Regulation-News-reg/actions/workflows/news_collector.yml/runs?per_page=5',
+            `https://api.github.com/repos/orbzodiac84/Regulation-News-reg/actions/workflows/${WORKFLOW_FILE}/runs?per_page=5`,
             {
                 headers: {
                     'Accept': 'application/vnd.github.v3+json',
@@ -21,11 +29,12 @@ export async function GET() {
         )
 
         const data = await response.json()
+        const workflowRuns: WorkflowRun[] = Array.isArray(data.workflow_runs) ? data.workflow_runs : []
 
-        if (data.workflow_runs && data.workflow_runs.length > 0) {
+        if (workflowRuns.length > 0) {
             // First, check if any run is in_progress or queued
-            const inProgressRun = data.workflow_runs.find(
-                (run: any) => run.status === 'in_progress' || run.status === 'queued'
+            const inProgressRun = workflowRuns.find(
+                (run) => run.status === 'in_progress' || run.status === 'queued'
             )
 
             if (inProgressRun) {
@@ -37,7 +46,7 @@ export async function GET() {
             }
 
             // No in-progress runs, return the latest completed
-            const latestRun = data.workflow_runs[0]
+            const latestRun = workflowRuns[0]
             return NextResponse.json({
                 status: latestRun.status,
                 conclusion: latestRun.conclusion,
