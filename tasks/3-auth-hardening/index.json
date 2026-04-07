@@ -1,0 +1,17 @@
+{
+  "project": "reg_brief",
+  "task": "auth-hardening",
+  "prompt": "Round 3 보안/위생 라운드. 프론트엔드 인증 결함(클라이언트 하드코딩 passcode, 서명 없는 쿠키, /api/* 미보호)을 막고, 백엔드의 print 잔존·notifier verify=False·logger 레거시 import 경로를 정리한다. dead code(web/components/Dashboard.tsx)를 제거하고, README/ARCHITECTURE.md/SQL 파일을 코드로 검증 가능한 사실 범위에서만 동기화한다. dedup/성능 재설계, DashboardV2 분해, 테스트 인프라, SSL 정책 개편, 프론트-백엔드 타입 전면 정합화는 명시적으로 out-of-scope.",
+  "totalPhases": 4,
+  "build_command": "venv/bin/python -c \"from src.pipeline import Pipeline; from src.services.analyzer import HybridAnalyzer\" && cd web && npm run build",
+  "commit_prefix": "refactor",
+  "branch_prefix": "refactor",
+  "push_on_complete": false,
+  "created_at": "2026-04-07T14:00:00+0900",
+  "phases": [
+    { "phase": 1, "name": "backend-hygiene", "status": "pending" },
+    { "phase": 2, "name": "frontend-auth", "status": "pending" },
+    { "phase": 3, "name": "api-report-safety-net", "status": "pending" },
+    { "phase": 4, "name": "deadcode-and-docs", "status": "pending" }
+  ]
+}
