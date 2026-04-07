@@ -19,7 +19,9 @@
     {
       "phase": 2,
       "name": "frontend-auth",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-07T15:55:55+0900",
+      "completed_at": "2026-04-07T16:10:00+0900"
     },
     {
       "phase": 3,
