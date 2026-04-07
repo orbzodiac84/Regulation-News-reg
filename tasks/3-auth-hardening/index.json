@@ -13,7 +13,8 @@
       "phase": 1,
       "name": "backend-hygiene",
       "status": "completed",
-      "started_at": "2026-04-07T15:53:32+0900"
+      "started_at": "2026-04-07T15:53:32+0900",
+      "completed_at": "2026-04-07T15:55:47+0900"
     },
     {
       "phase": 2,
