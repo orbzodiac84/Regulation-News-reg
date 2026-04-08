@@ -9,13 +9,47 @@
   "push_on_complete": false,
   "created_at": "2026-04-08T20:30:00+0900",
   "phases": [
-    { "phase": 1, "name": "ssl-matrix-local", "status": "pending" },
-    { "phase": 2, "name": "ssl-matrix-ci-workflow", "status": "pending" },
-    { "phase": 3, "name": "ssl-opt-in-implementation", "status": "pending" },
-    { "phase": 4, "name": "pdf-url-persist-in-save", "status": "pending" },
-    { "phase": 5, "name": "pdf-url-preserve-in-reanalyze", "status": "pending" },
-    { "phase": 6, "name": "pipeline-di-refactor", "status": "pending" },
-    { "phase": 7, "name": "pipeline-run-test", "status": "pending" },
-    { "phase": 8, "name": "rss-parser-test", "status": "pending" }
+    {
+      "phase": 1,
+      "name": "ssl-matrix-local",
+      "status": "completed",
+      "started_at": "2026-04-08T23:10:17+0900",
+      "completed_at": "2026-04-08T23:15:00+0900"
+    },
+    {
+      "phase": 2,
+      "name": "ssl-matrix-ci-workflow",
+      "status": "pending"
+    },
+    {
+      "phase": 3,
+      "name": "ssl-opt-in-implementation",
+      "status": "pending"
+    },
+    {
+      "phase": 4,
+      "name": "pdf-url-persist-in-save",
+      "status": "pending"
+    },
+    {
+      "phase": 5,
+      "name": "pdf-url-preserve-in-reanalyze",
+      "status": "pending"
+    },
+    {
+      "phase": 6,
+      "name": "pipeline-di-refactor",
+      "status": "pending"
+    },
+    {
+      "phase": 7,
+      "name": "pipeline-run-test",
+      "status": "pending"
+    },
+    {
+      "phase": 8,
+      "name": "rss-parser-test",
+      "status": "pending"
+    }
   ]
 }
