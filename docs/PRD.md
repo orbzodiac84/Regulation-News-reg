@@ -2,7 +2,7 @@
 
 **Project Name**: MarketPulse-Reg (Regulatory News Analysis System)
 **Version**: 2.0.0 (Forensic-Aligned)
-**Status**: Stage 2 Complete
+**Status**: Round 3 Cleanup Complete
 **Target User**: Risk Management Team (Korean Commercial Banks)
 
 ## 1. Product Vision
