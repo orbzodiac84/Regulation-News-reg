@@ -60,8 +60,9 @@
       "id": 8,
       "name": "round6-backend-safety",
       "dir": "8-round6-backend-safety",
-      "status": "pending",
-      "created_at": "2026-04-08T20:30:00+0900"
+      "status": "blocked",
+      "created_at": "2026-04-08T20:30:00+0900",
+      "blocked_at": "2026-04-08T23:17:22+0900"
     },
     {
       "id": 9,

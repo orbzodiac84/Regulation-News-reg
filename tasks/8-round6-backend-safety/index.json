@@ -26,7 +26,10 @@
     {
       "phase": 3,
       "name": "ssl-opt-in-implementation",
-      "status": "pending"
+      "status": "blocked",
+      "started_at": "2026-04-08T23:16:15+0900",
+      "blocked_reason": "SSL matrix incomplete: all agency rows (FSC, MOEF, FSS, BOK, FSS_REG, FSC_REG, FSS_REG_INFO, FSS_SANCTION, FSS_MGMT_NOTICE) still have ci_ok/ci_status/ci_error_type/ci_error_msg/final_decision = TBD in spec/round6/ssl-matrix.md. phase 2 에서 만든 .github/workflows/ssl-matrix-check.yml 워크플로를 사용자가 수동 실행하고 (`gh workflow run ssl-matrix-check.yml`), `gh run download --name ssl-matrix-ci-result` 로 받은 ssl_matrix_local.json 을 spec/round6/ssl-matrix.md 의 ci_* 컬럼에 붙여 넣은 뒤, 각 agency 의 final_decision 을 §결정 기준에 따라 default/opt-out/investigate 중 하나로 채워야 phase 3 이 진행 가능하다. 사용자 작업이 끝나면 phase 3 의 status 를 pending 으로 직접 바꾸고 runner 를 재실행하라.",
+      "blocked_at": "2026-04-08T23:17:22+0900"
     },
     {
       "phase": 4,
