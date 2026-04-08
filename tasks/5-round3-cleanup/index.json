@@ -12,9 +12,11 @@
     {
       "phase": 1,
       "name": "scheduler-removal",
-      "status": "completed",
+      "status": "error",
       "started_at": "2026-04-08T14:58:56+0900",
-      "completed_at": "2026-04-08T15:10:00+0900"
+      "completed_at": "2026-04-08T15:10:00+0900",
+      "error_message": "Build verification failed: python3 -c \"from src.pipeline import Pipeline; from src.services.analyzer import HybridAnalyzer\"",
+      "failed_at": "2026-04-08T15:01:06+0900"
     },
     {
       "phase": 2,
