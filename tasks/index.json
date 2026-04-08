@@ -36,8 +36,9 @@
       "id": 5,
       "name": "round3-cleanup",
       "dir": "5-round3-cleanup",
-      "status": "pending",
-      "created_at": "2026-04-08T14:35:00+0900"
+      "status": "completed",
+      "created_at": "2026-04-08T14:35:00+0900",
+      "completed_at": "2026-04-08T15:11:40+0900"
     }
   ]
 }
