@@ -1,0 +1,21 @@
+{
+  "project": "reg_brief",
+  "task": "round2-hygiene",
+  "prompt": "Round 2 리팩토링 — 저장소 위생 + 시크릿 대응 + /api/report 입력 무결성 + 다중 소스 3축(모델 ID / report prompt / sanction rule) 단일화 + 최소 테스트 하네스(pytest + vitest) 도입. Round 1(spec/refactor-round1.md)이 out-of-scope로 미뤘던 docs/·루트 dump·scripts/debug/·web/ orphan 정리를 포함하되, 전역 ignore 패턴·history rewrite·성능 개선·web 대분해·pipeline 추가 구조 변경은 다음 라운드로 미룬다. 동작 변경 0건, DB 스키마 변경 0건, 프롬프트 문장 변경 0건.",
+  "totalPhases": 8,
+  "build_command": "python3 -c \"from src.pipeline import Pipeline; from src.services.analyzer import HybridAnalyzer\"",
+  "commit_prefix": "refactor",
+  "branch_prefix": "refactor",
+  "push_on_complete": false,
+  "created_at": "2026-04-08T10:25:00+0900",
+  "phases": [
+    { "phase": 1, "name": "repo-hygiene", "status": "pending" },
+    { "phase": 2, "name": "secret-tooling", "status": "pending" },
+    { "phase": 3, "name": "python-test-harness", "status": "pending" },
+    { "phase": 4, "name": "web-test-harness", "status": "pending" },
+    { "phase": 5, "name": "api-report-integrity", "status": "pending" },
+    { "phase": 6, "name": "sanction-rule-derivation", "status": "pending" },
+    { "phase": 7, "name": "model-id-env", "status": "pending" },
+    { "phase": 8, "name": "docs-sync", "status": "pending" }
+  ]
+}
