@@ -22,13 +22,15 @@ SAFEGUARD_KEYWORDS_PATH: Path = CONFIG_DIR / "safeguard_keywords.json"
 # --- Model Configuration for 2-Tier Hybrid Analysis ---
 
 # Tier 1: Gatekeeper (Fast, cheap filtering)
-MODEL_FILTER_ID = "gemini-2.5-flash-lite"
+MODEL_FILTER_ID = os.environ.get("GEMINI_FILTER_MODEL", "gemini-2.5-flash-lite")
 
 # Tier 2: Analyst (Deep analysis for important news)
-MODEL_ANALYZER_ID = "gemini-3-flash-preview"
+MODEL_ANALYZER_ID = os.environ.get("GEMINI_ANALYZER_MODEL", "gemini-3-flash-preview")
 
 # Fallback if Tier 2 model unavailable
-MODEL_ANALYZER_FALLBACK = "gemini-1.5-pro"
+MODEL_ANALYZER_FALLBACK = os.environ.get(
+    "GEMINI_ANALYZER_FALLBACK_MODEL", "gemini-1.5-pro"
+)
 
 # Importance threshold to trigger Tier 2 analysis
 # Only articles with importance_score >= this value get deep analysis
