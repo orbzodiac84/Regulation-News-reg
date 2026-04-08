@@ -72,6 +72,28 @@ phase 3 에서 각 agency 의 `final_decision` 을 확정할 때 다음 규칙�
   동일 스크립트를 돌려 `logs/ssl_matrix_ci.json` 아티팩트를 업로드한다. phase 3 시작 시점에
   아티팩트를 내려받아 본 문서의 `ci_*` 컬럼을 채운 뒤 `final_decision` 을 결정한다.
 
+## CI 실행 절차
+
+phase 2 에서는 `.github/workflows/ssl-matrix-check.yml` 파일만 추가하며, 워크플로의 **실제 실행은
+사용자가 수동으로 한다**. phase 2 의 Claude 세션은 이 workflow 를 실행하지 않는다. phase 2 는
+워크플로 파일과 안내 문서만 만들고 정상 종료한다. 사용자가 수동으로 한 번 돌려 결과를 `ci_*`
+컬럼과 `final_decision` 에 채워야 phase 3 이 진행 가능하다 (phase 3 hard gate).
+
+수동 실행 예시:
+
+```
+gh workflow run ssl-matrix-check.yml
+gh run watch                    # 실행 감시
+gh run download --name ssl-matrix-ci-result --dir ./.ssl-matrix-ci-tmp
+```
+
+다운로드된 아티팩트에는 `ssl_matrix_local.json` (CI runner 가 로컬 스크립트와 동일 경로로 저장)
+파일이 들어 있다. 이 JSON 의 `results` 배열을 agency code + target URL 기준으로 매칭하여 본
+문서의 `ci_ok` / `ci_status` / `ci_error_type` / `ci_error_msg` 컬럼에 붙여 넣고, 결정 기준 §1~§4
+에 따라 각 행의 `final_decision` 값을 `default` / `opt-out` / `investigate` 중 하나로 확정한
+뒤 phase 3 을 시작한다. 이 작업이 끝나지 않은 상태에서 phase 3 이 시작되면 phase 3 의 hard gate
+가 즉시 `blocked` 상태로 잡는다.
+
 ## 원시 결과 스냅샷 (phase 1 / 로컬 실행)
 
 `logs/ssl_matrix_local.json` 파일이 gitignored 일 수 있어 아래에 전체 내용을 그대로 보존한다.
