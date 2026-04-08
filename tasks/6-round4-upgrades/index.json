@@ -27,7 +27,8 @@
       "phase": 3,
       "name": "docs-arch-sync",
       "status": "completed",
-      "started_at": "2026-04-08T17:07:03+0900"
+      "started_at": "2026-04-08T17:07:03+0900",
+      "completed_at": "2026-04-08T17:08:42+0900"
     }
   ]
 }
