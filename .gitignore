@@ -40,6 +40,7 @@ tasks/*/phase*-output.json
 /debug_*.md
 /debug_*.py
 /*_result.txt
+/result_utf8.txt
 /moef_dump.txt
 /agencies_history.txt
 /agency_stats.json
