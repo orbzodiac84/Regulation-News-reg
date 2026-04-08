@@ -19,7 +19,9 @@
     {
       "phase": 2,
       "name": "wrapper-regression-tests",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-08T19:22:49+0900",
+      "completed_at": "2026-04-08T19:30:00+0900"
     }
   ]
 }
