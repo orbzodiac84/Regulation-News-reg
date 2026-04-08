@@ -13,7 +13,8 @@
       "phase": 1,
       "name": "gh-actions-upgrade",
       "status": "completed",
-      "started_at": "2026-04-08T17:04:15+0900"
+      "started_at": "2026-04-08T17:04:15+0900",
+      "completed_at": "2026-04-08T17:05:40+0900"
     },
     {
       "phase": 2,
