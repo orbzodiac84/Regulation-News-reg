@@ -33,7 +33,10 @@
     {
       "phase": 4,
       "name": "sidebar-extraction",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-09T16:38:44+0900",
+      "completed_at": "2026-04-09T16:45:00+0900",
+      "notes": "manual visual check required"
     },
     {
       "phase": 5,
