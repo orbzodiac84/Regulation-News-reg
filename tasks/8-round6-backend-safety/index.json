@@ -61,7 +61,9 @@
     {
       "phase": 8,
       "name": "rss-parser-test",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-09T15:09:28+0900",
+      "completed_at": "2026-04-09T15:12:00+0900"
     }
   ]
 }
