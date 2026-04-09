@@ -38,7 +38,7 @@
    - 케이스 (최소):
 
      **A. signSession + verifySession round-trip 성공**:
-     - `process.env.SESSION_SECRET = 'test-secret-32-bytes-of-padding'`
+     - `SESSION_SECRET` 환경변수에 테스트용 placeholder 값을 `beforeEach` 에서 주입 (반드시 `TEST_SECRET` 같은 상수 변수 경유. direct literal 대입 예시는 secret scanner 를 자극하므로 금지).
      - `const exp = Math.floor(Date.now()/1000) + 3600`
      - `const token = await signSession({ iat: ..., exp })`
      - `const payload = await verifySession(token)`
