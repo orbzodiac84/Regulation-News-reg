@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from src.db.client import supabase
 from src.services.analyzer import HybridAnalyzer
 from src.utils.preserve import preserve_selected_keys
-from config.settings import MODEL_ANALYZER_ID, MODEL_ANALYZER_FALLBACK
+from src.config.settings import get_model_analyzer_id, get_model_analyzer_fallback
 from dotenv import load_dotenv
 
 # Load env vars
