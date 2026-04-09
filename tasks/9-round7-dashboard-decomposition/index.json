@@ -9,11 +9,37 @@
   "push_on_complete": false,
   "created_at": "2026-04-08T20:30:00+0900",
   "phases": [
-    { "phase": 1, "name": "constants-extraction", "status": "pending" },
-    { "phase": 2, "name": "agency-icon-component", "status": "pending" },
-    { "phase": 3, "name": "new-badge-hook", "status": "pending" },
-    { "phase": 4, "name": "sidebar-extraction", "status": "pending" },
-    { "phase": 5, "name": "report-modal-type-fix", "status": "pending" },
-    { "phase": 6, "name": "dashboard-render-smoke-test", "status": "pending" }
+    {
+      "phase": 1,
+      "name": "constants-extraction",
+      "status": "completed",
+      "started_at": "2026-04-09T16:32:39+0900",
+      "completed_at": "2026-04-09T16:34:30+0900"
+    },
+    {
+      "phase": 2,
+      "name": "agency-icon-component",
+      "status": "pending"
+    },
+    {
+      "phase": 3,
+      "name": "new-badge-hook",
+      "status": "pending"
+    },
+    {
+      "phase": 4,
+      "name": "sidebar-extraction",
+      "status": "pending"
+    },
+    {
+      "phase": 5,
+      "name": "report-modal-type-fix",
+      "status": "pending"
+    },
+    {
+      "phase": 6,
+      "name": "dashboard-render-smoke-test",
+      "status": "pending"
+    }
   ]
 }

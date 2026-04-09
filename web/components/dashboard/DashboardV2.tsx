@@ -10,17 +10,25 @@ import SearchBar from './SearchBar'
 import DateSection from './DateSection'
 import ReportModal from '@/components/ReportModal' // Reuse existing modal
 import NewsCard, { Article } from './NewsCard'
+import {
+    pressAgencies,
+    regulationAgencies,
+    sanctionAgencies,
+    agencyOrder,
+    regAgencyOrder,
+    sanctionAgencyOrder,
+    agencyNames,
+    regAgencyNames,
+    sanctionAgencyNames,
+    DashboardCategory,
+} from './constants'
 
 export default function DashboardV2() {
-    const pressAgencies = ['MOEF', 'FSC', 'FSS', 'BOK']
-    const regulationAgencies = ['FSC_REG', 'FSS_REG', 'FSS_REG_INFO']
-    const sanctionAgencies = ['FSS_SANCTION', 'FSS_MGMT_NOTICE']
-
     const [articles, setArticles] = useState<Article[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedAgency, setSelectedAgency] = useState<string | null>(null) // Agency filter
-    const [currentCategory, setCurrentCategory] = useState<'press_release' | 'regulation_notice' | 'sanction_notice'>('press_release') // Category filter
+    const [currentCategory, setCurrentCategory] = useState<DashboardCategory>('press_release') // Category filter
 
     // UI State
     const [isAgencyExpanded, setIsAgencyExpanded] = useState(false) // Collapsible agency section (Press Release)
@@ -168,30 +176,6 @@ export default function DashboardV2() {
     const handleGenerateReport = (article: Article) => {
         setSelectedArticle(article)
         setIsReportModalOpen(true)
-    }
-
-    // Agency Mapping (EN -> KR) - Reordered: MOEF, FSC, FSS, BOK
-    const agencyOrder = pressAgencies
-    const agencyNames: Record<string, string> = {
-        'MOEF': '기획재정부',
-        'FSC': '금융위원회',
-        'FSS': '금융감독원',
-        'BOK': '한국은행'
-    }
-
-    // Regulation Agencies (FSS has two sub-categories)
-    const regAgencyOrder = regulationAgencies
-    const regAgencyNames: Record<string, string> = {
-        'FSC_REG': '금융위원회',
-        'FSS_REG': '금감원 - 세칙 제개정 예고',
-        'FSS_REG_INFO': '금감원 - 최근 제개정 정보'
-    }
-
-    // Sanction Agencies
-    const sanctionAgencyOrder = sanctionAgencies
-    const sanctionAgencyNames: Record<string, string> = {
-        'FSS_SANCTION': '검사결과 제재',
-        'FSS_MGMT_NOTICE': '경영유의사항'
     }
 
     // Agency Icon Mapping (FSC = Gavel + Coin icon)
