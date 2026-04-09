@@ -10,7 +10,7 @@ from urllib.parse import urljoin, urlparse, parse_qs
 from bs4 import BeautifulSoup
 
 from src.config import settings
-from src.config.agency_loader import is_sanction_agency
+from src.config.agency_loader import get_ssl_verify, is_sanction_agency
 from src.collectors import http
 from src.collectors.date_parser import KST, parse_date
 
@@ -80,7 +80,7 @@ def fetch_sanction_items(agency_config: Dict) -> List[Dict]:
 
         try:
             time.sleep(random.uniform(1.0, 2.0))
-            response = http.fetch(page_url)
+            response = http.fetch(page_url, verify=get_ssl_verify(code))
 
             soup = BeautifulSoup(response.content, 'html.parser')
 

@@ -74,8 +74,9 @@ SCRAPER_TIMEOUT = 20
 SCRAPER_RETRY_DELAY_MIN = 2.0
 SCRAPER_RETRY_DELAY_MAX = 4.0
 
-# SSL Verification (False is recommended for some KR govt sites)
-SSL_VERIFY = False
+# SSL Verification.
+# Default: verify TLS. Per-agency opt-out via `config/agencies.json` `ssl_verify: false`.
+SSL_VERIFY = True
 SUPPRESS_SSL_WARNINGS = True
 
 # --- Scheduler Settings ---
