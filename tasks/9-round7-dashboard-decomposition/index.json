@@ -26,7 +26,9 @@
     {
       "phase": 3,
       "name": "new-badge-hook",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-09T16:37:20+0900",
+      "completed_at": "2026-04-09T16:39:00+0900"
     },
     {
       "phase": 4,

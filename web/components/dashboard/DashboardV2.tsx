@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { toKSTDate } from '@/utils/date' // Use new utils
 import { supabase } from '@/utils/supabase/client'
-import { getLastVisitTime, updateLastVisitTime, isArticleNew, countNewArticles } from '@/utils/newArticleTracker'
+import { getLastVisitTime, updateLastVisitTime, isArticleNew } from '@/utils/newArticleTracker'
 import Header from './Header'
 import SearchBar from './SearchBar'
 import DateSection from './DateSection'
@@ -23,6 +23,7 @@ import {
     sanctionAgencyNames,
     DashboardCategory,
 } from './constants'
+import { useHasNewByCategory } from './useHasNewByCategory'
 
 export default function DashboardV2() {
     const [articles, setArticles] = useState<Article[]>([])
@@ -43,26 +44,7 @@ export default function DashboardV2() {
     const [lastVisitTime, setLastVisitTime] = useState<Date | null>(null) // For NEW badge tracking
 
     // Track NEW status for main menus (Dependent on lastVisitTime)
-    const hasNewPress = useMemo(() => {
-        return articles.some(a =>
-            (a.category === 'press_release' || !a.category) &&
-            isArticleNew(a.created_at || a.published_at, lastVisitTime)
-        )
-    }, [articles, lastVisitTime])
-
-    const hasNewReg = useMemo(() => {
-        return articles.some(a =>
-            a.category === 'regulation_notice' &&
-            isArticleNew(a.created_at || a.published_at, lastVisitTime)
-        )
-    }, [articles, lastVisitTime])
-
-    const hasNewSanction = useMemo(() => {
-        return articles.some(a =>
-            a.category === 'sanction_notice' &&
-            isArticleNew(a.created_at || a.published_at, lastVisitTime)
-        )
-    }, [articles, lastVisitTime])
+    const { hasNewPress, hasNewReg, hasNewSanction } = useHasNewByCategory(articles, lastVisitTime)
 
     const fetchArticles = async () => {
         setLoading(true)
