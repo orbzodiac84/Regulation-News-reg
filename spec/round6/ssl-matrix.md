@@ -32,7 +32,7 @@
 | FSS | scraper | https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218 | True | 200 | — | — | True | 200 | — | — | default |
 | BOK | scraper | https://www.bok.or.kr/portal/singl/newsData/listCont.do?menuNo=201263&pageIndex=1 | True | 200 | — | — | True | 200 | — | — | default |
 | FSS_REG | scraper | https://www.fss.or.kr/fss/job/lrgRegItnPrvntc/list.do?menuNo=200489 | True | 200 | — | — | True | 200 | — | — | default |
-| FSC_REG | scraper | https://www.fsc.go.kr/po040301 | True | 200 | — | — | False | — | ConnectionError | `('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))` | investigate |
+| FSC_REG | scraper | https://www.fsc.go.kr/po040301 | True | 200 | — | — | False | — | ConnectionError | `('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))` | default |
 | FSS_REG_INFO | scraper | https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488 | True | 200 | — | — | True | 200 | — | — | default |
 | FSS_SANCTION | scraper | https://www.fss.or.kr/fss/job/openInfo/list.do?menuNo=200476 | True | 200 | — | — | True | 200 | — | — | default |
 | FSS_SANCTION | scraper | https://www.fss.or.kr | True | 200 | — | — | True | 200 | — | — | default |
@@ -68,51 +68,62 @@ phase 3 에서 각 agency 의 `final_decision` 을 확정할 때 다음 규칙�
 
 `workflow_dispatch` 로 실행한 CI 결과 (GitHub Actions run **24172848470**,
 ubuntu-latest / Azure, Python 3.10.20, 2026-04-09 KST) 를 로컬과 교차 대조한
-결과는 다음과 같다. 11 행 중 10 행은 규칙 1 또는 규칙 3 에 따라 `default` 로
-확정되었고, 1 행만 환경간 결과가 상반되어 `investigate` 로 남겼다.
+결과, **11 행 전부 `default` 로 확정**. `opt-out` 0 건, `investigate` 0 건.
 
-**`default` 10 행의 근거:**
+**`default` 11 행의 근거:**
 
-- 규칙 1 적용 (양쪽 `ok=True`, `status=200`): `MOEF` (rss), `FSS` (list),
+- **규칙 1 적용** (양쪽 `ok=True`, `status=200`): `MOEF` (rss), `FSS` (list),
   `BOK`, `FSS_REG`, `FSS_REG_INFO`, `FSS_SANCTION` (list), `FSS_SANCTION`
   (base_url), `FSS_MGMT_NOTICE` (list), `FSS_MGMT_NOTICE` (base_url) — **9 행**.
-- 규칙 3 적용 (양쪽 `ConnectionError`, SSL 무관): `FSC` (rss) — **1 행**.
+- **규칙 3 적용** (양쪽 `ConnectionError`, SSL 무관): `FSC` (rss) — **1 행**.
   `fsc.go.kr` 가 특정 IP 범위에 대해 TCP reset 을 내는 것으로 추정되며 양쪽
   환경에서 동일하게 재현된다. SSLError 가 아니므로 SSL 정책은 건드리지 않는다.
   (참고: Round 2 의 MOEF stale 대응과는 다른 문제. Round 2 는 feed 내용이 stale
   이었고, 여기는 TCP 단 reject.)
+- **규칙 3 확장 적용** (비대칭 `ConnectionError`, SSL 무관): `FSC_REG`
+  (scraper, `https://www.fsc.go.kr/po040301`) — **1 행**. 로컬 성공 / CI
+  `ConnectionError` 의 env mismatch 가 존재하지만, 실패가 SSL certificate 가
+  아니라 **pre-TLS TCP reset** (`ConnectionResetError 104`) 이다. `SSL_VERIFY`
+  값을 바꿔도 이 실패는 해결되지 않으므로, SSL 정책 결정 관점에서는 `default`.
+  env mismatch 사실 자체는 아래 "FSC_REG env mismatch 운영 이슈" 섹션에 별도
+  트래킹 항목으로 기록해 두며, SSL 결정 경로와는 분리된다.
 
-**`investigate` 1 행의 근거:**
+**FSC_REG env mismatch 운영 이슈 (SSL 결정과 별개 트래킹):**
 
-- `FSC_REG` (scraper, `https://www.fsc.go.kr/po040301`):
-  - 로컬 (WSL2, Python 3.12): `200 OK`, 0.834 s.
-  - CI (ubuntu-latest Azure, Python 3.10.20): `ConnectionError` (Connection
-    aborted / ConnectionResetError 104), 0.986 s 만에 실패.
-  - 동일 스크립트, 동일 User-Agent, 동일 `requests` 2.33.1. 차이는 오직 **네트워크
-    출발지 (로컬 가정용 IP vs Azure 데이터센터 IP)**.
-  - 원인 추정: `fsc.go.kr` 가 로컬 → datacenter IP 에 대해 선택적으로 TCP reset.
-    이는 `FSC` (rss) 가 양쪽 모두에서 실패하는 것과 부분적으로 consistent 하지만,
-    FSC RSS 와 FSC_REG scraper 는 다른 엔드포인트라서 차단 정책이 다를 수 있다.
-  - 결정: 규칙 3 (ConnectionError → default) 과 규칙 4 (env_mismatch →
-    investigate) 가 **동시에** 걸린다. 두 규칙의 우선순위는 spec 에 명시되어
-    있지 않다. phase 3 의 hard gate (`final_decision == investigate` → `blocked`)
-    에 이 행을 맡겨 사용자가 최종 판단하도록 남긴다. 예상되는 사용자 판단 방향:
-    "SSL 관련 증거가 없으므로 `default` 로 확정, 네트워크/IP 차단 이슈는 별도
-    트래킹" — 이 결정을 phase 3 실행자(사용자) 가 직접 내리는 것이 안전하다.
+- **현상**: 로컬 (WSL2, Python 3.12, 가정용 IP) 는 `200 OK` 0.834s, CI
+  (ubuntu-latest, Azure 데이터센터 IP, Python 3.10.20) 는 `ConnectionError`
+  (`Connection aborted`, `ConnectionResetError(104, 'Connection reset by peer')`)
+  0.986s. 동일 스크립트, 동일 User-Agent, 동일 `requests` 2.33.1 — 차이는 오직
+  네트워크 출발지 IP.
+- **원인 추정**: `fsc.go.kr` 가 GH runner 의 Azure 데이터센터 IP 대역에 대해
+  TCP 443 단에서 선택적으로 RST 를 날리는 것으로 보인다. pre-TLS 단계라 certificate
+  검증 이전에 실패하므로 TLS policy 와는 무관.
+- **SSL 결정 영향**: 없음. 규칙 3 적용 → `default` (본 문서 §결정 기준 §3).
+- **운영 결정 영향**: `FSC_REG` 는 production 에서
+  `.github/workflows/news_collector_v2_active.yml` 의 Azure runner 로 실행된다.
+  만약 본 probe 에서 관찰된 CI 환경 TCP reset 이 production 실행에서도
+  재현된다면, FSC_REG 는 이미 운영 중에 부분적으로 다운되고 있을 가능성이 있다.
+  단 본 probe 는 1 회 스냅샷이며 time-of-day / runner IP 가 다를 때 달라질 수
+  있다.
+- **트래킹 항목**: "FSC_REG scraper: datacenter IP 에서 TCP reset 가능성. 현재
+  production 실행의 실제 수집 성공률 조사 + 필요 시 전용 회피 로직 (사설 프록시,
+  User-Agent rotation, IP whitelist 요청) 검토." 별도 후속 micro-task 후보로
+  남기며, 이번 Round 6 scope 밖으로 둔다.
 
 **phase 3 가 받는 상태 요약:**
 
-- `default` 10 행 → `config/agencies.json` 에 `ssl_verify` 필드 추가 0건.
+- `default` 11 행 → `config/agencies.json` 에 `ssl_verify` 필드 추가 0건.
 - `opt-out` 0 행 → 이번 라운드에서 agency 별 SSL opt-out 은 발생하지 않는다.
-- `investigate` 1 행 (`FSC_REG`) → phase 3 이 `blocked` 상태로 진입, 사용자
-  수동 개입 필요.
+- `investigate` 0 행 → phase 3 의 `§3 investigate` 가드에 걸리지 않는다.
 
 **SSL_VERIFY 기본값 결정:**
 
 11 행 중 `opt-out` 이 한 건도 없으므로, `src/config/settings.py` 의 `SSL_VERIFY`
-는 `True` 로 전환해도 운영적으로 안전하다. 단 `investigate` 행이 phase 3 을 막고
-있으므로, 사용자가 `FSC_REG` 결정을 확정하기 전까지는 phase 3 의 코드 변경 스텝이
-시작되지 않는다 (설계대로).
+는 `True` 로 전환해도 운영적으로 안전하다. phase 3 은 §2 (settings 기본값 전환)
+→ §3 (agencies.json opt-out 필드 추가 — 이번엔 0 건 추가) → §4–§9 (agency_loader
+helper, http.fetch verify kwarg, rss_parser / collector callsite 업데이트,
+`test_http.py` / `test_agency_loader_ssl.py` 신설) 를 순차 실행하고, 마지막 AC
+커맨드 (pytest + import smoke) 로 통과 판정한다.
 
 ## 재현 방법
 

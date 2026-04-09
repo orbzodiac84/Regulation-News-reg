@@ -26,10 +26,7 @@
     {
       "phase": 3,
       "name": "ssl-opt-in-implementation",
-      "status": "blocked",
-      "started_at": "2026-04-09T13:53:23+0900",
-      "blocked_reason": "SSL matrix has FSC_REG with final_decision=investigate (로컬 200 OK, CI ConnectionError — env_mismatch). 작업 항목 3 에 따라 investigate agency 가 존재하면 phase 3 을 blocked 으로 처리해야 한다. 사용자가 FSC_REG 의 최종 결정을 default 또는 opt-out 중 하나로 직접 확정한 뒤 (spec/round6/ssl-matrix.md §CI 결과 기반 최종 결정 참조 — 예상 판단은 'SSL 증거 없음 → default'), phase 3 의 status 를 pending 으로 바꾸고 runner 를 재실행해야 한다. 임의 추측으로 진행하지 않는다.",
-      "blocked_at": "2026-04-09T13:54:02+0900"
+      "status": "pending"
     },
     {
       "phase": 4,
