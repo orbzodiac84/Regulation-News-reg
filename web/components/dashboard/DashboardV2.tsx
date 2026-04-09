@@ -289,7 +289,7 @@ export default function DashboardV2() {
                 <ReportModal
                     isOpen={isReportModalOpen}
                     onClose={() => setIsReportModalOpen(false)}
-                    article={selectedArticle as any}
+                    article={selectedArticle}
                 />
             )}
         </div>
