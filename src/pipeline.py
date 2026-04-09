@@ -255,13 +255,27 @@ class Pipeline:
         if not self.supabase:
             return
         try:
+            analysis_result = item.get('analysis_result')
+            pdf_url = item.get('pdf_url')
+            if pdf_url:
+                if isinstance(analysis_result, dict):
+                    # New dict; do not mutate the original (shared with _notify_item).
+                    analysis_result = {**analysis_result, 'pdf_url': pdf_url}
+                else:
+                    if analysis_result is not None:
+                        logger.warning(
+                            "  > analysis_result has unexpected type %s; replacing with pdf_url-only dict.",
+                            type(analysis_result).__name__,
+                        )
+                    analysis_result = {'pdf_url': pdf_url}
+
             data = {
                 "agency": item['agency'],
                 "title": item['title'],
                 "link": item['link'],
                 "published_at": item.get('published_at') or datetime.now().isoformat(),
                 "content": item.get('content') or "",
-                "analysis_result": item.get('analysis_result'),
+                "analysis_result": analysis_result,
                 "category": item.get('category', ArticleCategory.PRESS_RELEASE),
             }
             self.supabase.table("articles").insert(data).execute()
