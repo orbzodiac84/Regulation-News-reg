@@ -27,17 +27,17 @@
 
 | agency code | collection_method | target URL | local_ok | local_status | local_error_type | local_error_msg | ci_ok | ci_status | ci_error_type | ci_error_msg | final_decision |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| FSC | rss | https://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111 | False | — | ConnectionError | `('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))` | TBD | TBD | TBD | TBD | TBD |
-| MOEF | rss | https://www.korea.kr/rss/dept_mofe.xml | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| FSS | scraper | https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218 | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| BOK | scraper | https://www.bok.or.kr/portal/singl/newsData/listCont.do?menuNo=201263&pageIndex=1 | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| FSS_REG | scraper | https://www.fss.or.kr/fss/job/lrgRegItnPrvntc/list.do?menuNo=200489 | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| FSC_REG | scraper | https://www.fsc.go.kr/po040301 | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| FSS_REG_INFO | scraper | https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488 | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| FSS_SANCTION | scraper | https://www.fss.or.kr/fss/job/openInfo/list.do?menuNo=200476 | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| FSS_SANCTION | scraper | https://www.fss.or.kr | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| FSS_MGMT_NOTICE | scraper | https://www.fss.or.kr/fss/job/openInfoImpr/list.do?menuNo=200483 | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
-| FSS_MGMT_NOTICE | scraper | https://www.fss.or.kr | True | 200 | — | — | TBD | TBD | TBD | TBD | TBD |
+| FSC | rss | https://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111 | False | — | ConnectionError | `('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))` | False | — | ConnectionError | `('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))` | default |
+| MOEF | rss | https://www.korea.kr/rss/dept_mofe.xml | True | 200 | — | — | True | 200 | — | — | default |
+| FSS | scraper | https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218 | True | 200 | — | — | True | 200 | — | — | default |
+| BOK | scraper | https://www.bok.or.kr/portal/singl/newsData/listCont.do?menuNo=201263&pageIndex=1 | True | 200 | — | — | True | 200 | — | — | default |
+| FSS_REG | scraper | https://www.fss.or.kr/fss/job/lrgRegItnPrvntc/list.do?menuNo=200489 | True | 200 | — | — | True | 200 | — | — | default |
+| FSC_REG | scraper | https://www.fsc.go.kr/po040301 | True | 200 | — | — | False | — | ConnectionError | `('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))` | investigate |
+| FSS_REG_INFO | scraper | https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488 | True | 200 | — | — | True | 200 | — | — | default |
+| FSS_SANCTION | scraper | https://www.fss.or.kr/fss/job/openInfo/list.do?menuNo=200476 | True | 200 | — | — | True | 200 | — | — | default |
+| FSS_SANCTION | scraper | https://www.fss.or.kr | True | 200 | — | — | True | 200 | — | — | default |
+| FSS_MGMT_NOTICE | scraper | https://www.fss.or.kr/fss/job/openInfoImpr/list.do?menuNo=200483 | True | 200 | — | — | True | 200 | — | — | default |
+| FSS_MGMT_NOTICE | scraper | https://www.fss.or.kr | True | 200 | — | — | True | 200 | — | — | default |
 
 참고: `FSS_SANCTION` / `FSS_MGMT_NOTICE` 는 `url` (list URL) 과 `base_url` (`https://www.fss.or.kr`)
 가 서로 다르므로 두 행으로 기록했다. 나머지 scraper agency 는 `url == base_url` 이라 dedup 되어
@@ -63,6 +63,56 @@ phase 3 에서 각 agency 의 `final_decision` 을 확정할 때 다음 규칙�
 `SSLError` 가 아니라 TCP reset 계열이므로 규칙 3 에 해당한다. SSL 정책을 `opt-out` 으로 돌릴
 근거는 아니다. 다만 phase 2 의 CI 결과에서 동일 원인이 재현되는지, 혹은 실제로는 SSL 관련 원인으로
 나타나는지를 교차 확인한 뒤 phase 3 에서 확정한다.
+
+## CI 결과 기반 최종 결정 (phase 3 진입 전)
+
+`workflow_dispatch` 로 실행한 CI 결과 (GitHub Actions run **24172848470**,
+ubuntu-latest / Azure, Python 3.10.20, 2026-04-09 KST) 를 로컬과 교차 대조한
+결과는 다음과 같다. 11 행 중 10 행은 규칙 1 또는 규칙 3 에 따라 `default` 로
+확정되었고, 1 행만 환경간 결과가 상반되어 `investigate` 로 남겼다.
+
+**`default` 10 행의 근거:**
+
+- 규칙 1 적용 (양쪽 `ok=True`, `status=200`): `MOEF` (rss), `FSS` (list),
+  `BOK`, `FSS_REG`, `FSS_REG_INFO`, `FSS_SANCTION` (list), `FSS_SANCTION`
+  (base_url), `FSS_MGMT_NOTICE` (list), `FSS_MGMT_NOTICE` (base_url) — **9 행**.
+- 규칙 3 적용 (양쪽 `ConnectionError`, SSL 무관): `FSC` (rss) — **1 행**.
+  `fsc.go.kr` 가 특정 IP 범위에 대해 TCP reset 을 내는 것으로 추정되며 양쪽
+  환경에서 동일하게 재현된다. SSLError 가 아니므로 SSL 정책은 건드리지 않는다.
+  (참고: Round 2 의 MOEF stale 대응과는 다른 문제. Round 2 는 feed 내용이 stale
+  이었고, 여기는 TCP 단 reject.)
+
+**`investigate` 1 행의 근거:**
+
+- `FSC_REG` (scraper, `https://www.fsc.go.kr/po040301`):
+  - 로컬 (WSL2, Python 3.12): `200 OK`, 0.834 s.
+  - CI (ubuntu-latest Azure, Python 3.10.20): `ConnectionError` (Connection
+    aborted / ConnectionResetError 104), 0.986 s 만에 실패.
+  - 동일 스크립트, 동일 User-Agent, 동일 `requests` 2.33.1. 차이는 오직 **네트워크
+    출발지 (로컬 가정용 IP vs Azure 데이터센터 IP)**.
+  - 원인 추정: `fsc.go.kr` 가 로컬 → datacenter IP 에 대해 선택적으로 TCP reset.
+    이는 `FSC` (rss) 가 양쪽 모두에서 실패하는 것과 부분적으로 consistent 하지만,
+    FSC RSS 와 FSC_REG scraper 는 다른 엔드포인트라서 차단 정책이 다를 수 있다.
+  - 결정: 규칙 3 (ConnectionError → default) 과 규칙 4 (env_mismatch →
+    investigate) 가 **동시에** 걸린다. 두 규칙의 우선순위는 spec 에 명시되어
+    있지 않다. phase 3 의 hard gate (`final_decision == investigate` → `blocked`)
+    에 이 행을 맡겨 사용자가 최종 판단하도록 남긴다. 예상되는 사용자 판단 방향:
+    "SSL 관련 증거가 없으므로 `default` 로 확정, 네트워크/IP 차단 이슈는 별도
+    트래킹" — 이 결정을 phase 3 실행자(사용자) 가 직접 내리는 것이 안전하다.
+
+**phase 3 가 받는 상태 요약:**
+
+- `default` 10 행 → `config/agencies.json` 에 `ssl_verify` 필드 추가 0건.
+- `opt-out` 0 행 → 이번 라운드에서 agency 별 SSL opt-out 은 발생하지 않는다.
+- `investigate` 1 행 (`FSC_REG`) → phase 3 이 `blocked` 상태로 진입, 사용자
+  수동 개입 필요.
+
+**SSL_VERIFY 기본값 결정:**
+
+11 행 중 `opt-out` 이 한 건도 없으므로, `src/config/settings.py` 의 `SSL_VERIFY`
+는 `True` 로 전환해도 운영적으로 안전하다. 단 `investigate` 행이 phase 3 을 막고
+있으므로, 사용자가 `FSC_REG` 결정을 확정하기 전까지는 phase 3 의 코드 변경 스텝이
+시작되지 않는다 (설계대로).
 
 ## 재현 방법
 
@@ -225,6 +275,149 @@ gh run download --name ssl-matrix-ci-result --dir ./.ssl-matrix-ci-tmp
       "ok": true,
       "status_code": 200,
       "elapsed_sec": 1.441,
+      "final_url": "https://www.fss.or.kr/fss/main/main.do?menuNo=200000",
+      "error_type": null,
+      "error_msg": null
+    }
+  ]
+}
+```
+
+## 원시 결과 스냅샷 (phase 2 / CI 실행)
+
+GitHub Actions workflow `ssl-matrix-check.yml` 를 `workflow_dispatch` 로 수동
+실행한 결과 (run `24172848470`, branch `refactor-round6-backend-safety`,
+ubuntu-latest). 아티팩트 `ssl-matrix-ci-result` 에 들어 있던
+`ssl_matrix_local.json` (CI runner 가 로컬 스크립트와 동일 경로로 저장) 을 그대로
+보존한다.
+
+```json
+{
+  "run_at_kst": "2026-04-09T13:45:27+09:00",
+  "environment": {
+    "platform": "Linux-6.17.0-1010-azure-x86_64-with-glibc2.39",
+    "python": "3.10.20",
+    "requests": "2.33.1",
+    "certifi_ca_bundle": "/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/certifi/cacert.pem"
+  },
+  "results": [
+    {
+      "code": "FSC",
+      "collection_method": "rss",
+      "url": "https://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111",
+      "ok": false,
+      "status_code": null,
+      "elapsed_sec": 0.946,
+      "final_url": null,
+      "error_type": "ConnectionError",
+      "error_msg": "('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))"
+    },
+    {
+      "code": "MOEF",
+      "collection_method": "rss",
+      "url": "https://www.korea.kr/rss/dept_mofe.xml",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 1.829,
+      "final_url": "https://www.korea.kr/rss/dept_mofe.xml",
+      "error_type": null,
+      "error_msg": null
+    },
+    {
+      "code": "FSS",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 2.197,
+      "final_url": "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218",
+      "error_type": null,
+      "error_msg": null
+    },
+    {
+      "code": "BOK",
+      "collection_method": "scraper",
+      "url": "https://www.bok.or.kr/portal/singl/newsData/listCont.do?menuNo=201263&pageIndex=1",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 1.018,
+      "final_url": "https://www.bok.or.kr/portal/singl/newsData/listCont.do?menuNo=201263&pageIndex=1",
+      "error_type": null,
+      "error_msg": null
+    },
+    {
+      "code": "FSS_REG",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr/fss/job/lrgRegItnPrvntc/list.do?menuNo=200489",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 2.066,
+      "final_url": "https://www.fss.or.kr/fss/job/lrgRegItnPrvntc/list.do?menuNo=200489",
+      "error_type": null,
+      "error_msg": null
+    },
+    {
+      "code": "FSC_REG",
+      "collection_method": "scraper",
+      "url": "https://www.fsc.go.kr/po040301",
+      "ok": false,
+      "status_code": null,
+      "elapsed_sec": 0.986,
+      "final_url": null,
+      "error_type": "ConnectionError",
+      "error_msg": "('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))"
+    },
+    {
+      "code": "FSS_REG_INFO",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 2.235,
+      "final_url": "https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488",
+      "error_type": null,
+      "error_msg": null
+    },
+    {
+      "code": "FSS_SANCTION",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr/fss/job/openInfo/list.do?menuNo=200476",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 2.039,
+      "final_url": "https://www.fss.or.kr/fss/job/openInfo/list.do?menuNo=200476",
+      "error_type": null,
+      "error_msg": null
+    },
+    {
+      "code": "FSS_SANCTION",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 2.607,
+      "final_url": "https://www.fss.or.kr/fss/main/main.do?menuNo=200000",
+      "error_type": null,
+      "error_msg": null
+    },
+    {
+      "code": "FSS_MGMT_NOTICE",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr/fss/job/openInfoImpr/list.do?menuNo=200483",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 2.281,
+      "final_url": "https://www.fss.or.kr/fss/job/openInfoImpr/list.do?menuNo=200483",
+      "error_type": null,
+      "error_msg": null
+    },
+    {
+      "code": "FSS_MGMT_NOTICE",
+      "collection_method": "scraper",
+      "url": "https://www.fss.or.kr",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_sec": 3.115,
       "final_url": "https://www.fss.or.kr/fss/main/main.do?menuNo=200000",
       "error_type": null,
       "error_msg": null
