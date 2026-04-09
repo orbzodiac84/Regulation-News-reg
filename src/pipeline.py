@@ -17,15 +17,23 @@ SanctionKey = Tuple[str, str, str]
 
 
 class Pipeline:
-    def __init__(self, config_path):
+    def __init__(
+        self,
+        config_path,
+        *,
+        analyzer=None,
+        notifier=None,
+        db=None,
+        scraper=None,
+    ):
         self.config_path = config_path
         self.agency_map = self._load_agency_map()
 
         # Initialize Services
-        self.analyzer = self._init_analyzer()
-        self.notifier = self._init_notifier()
-        self.supabase = self._init_db()
-        self.scraper = ContentScraper()
+        self.analyzer = analyzer if analyzer is not None else self._init_analyzer()
+        self.notifier = notifier if notifier is not None else self._init_notifier()
+        self.supabase = db if db is not None else self._init_db()
+        self.scraper = scraper if scraper is not None else ContentScraper()
 
     # ------------------------------------------------------------------
     # Initialization helpers
