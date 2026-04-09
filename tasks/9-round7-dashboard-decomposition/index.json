@@ -48,7 +48,9 @@
     {
       "phase": 6,
       "name": "dashboard-render-smoke-test",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-09T16:46:44+0900",
+      "completed_at": "2026-04-09T16:48:30+0900"
     }
   ]
 }
