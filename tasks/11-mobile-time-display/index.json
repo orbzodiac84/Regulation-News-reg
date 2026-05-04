@@ -12,8 +12,10 @@
     {
       "phase": 1,
       "name": "schema-contract",
-      "status": "completed",
-      "started_at": "2026-05-04T13:34:32+0900"
+      "status": "error",
+      "started_at": "2026-05-04T13:34:32+0900",
+      "error_message": "Build verification failed: python3 -m pytest tests/unit -q && cd web && npm run lint && npm run build && npm run test",
+      "failed_at": "2026-05-04T13:37:05+0900"
     },
     {
       "phase": 2,
