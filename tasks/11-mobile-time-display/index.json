@@ -26,7 +26,9 @@
     {
       "phase": 3,
       "name": "frontend-time-helper",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-04T13:43:59+0900",
+      "completed_at": "2026-05-04T13:46:02+0900"
     },
     {
       "phase": 4,
