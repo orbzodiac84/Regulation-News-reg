@@ -76,7 +76,7 @@ grep -q "PublishedAtSource" src/collectors/sanction_scraper.py
 grep -q "PublishedAtSource" src/pipeline.py
 
 # 3) 관련 Python tests
-python3 -m pytest tests/unit/collectors tests/unit/pipeline -q
+venv/bin/python -m pytest tests/unit/collectors tests/unit/pipeline -q
 ```
 
 ## AC 검증 방법

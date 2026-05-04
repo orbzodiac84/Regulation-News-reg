@@ -81,7 +81,7 @@ grep -q 'SOURCE = "source"' src/config/agency_codes.py
 grep -q 'COLLECTED_FALLBACK = "collected_fallback"' src/config/agency_codes.py
 
 # 4) Python tests
-python3 -m pytest tests/unit -q
+venv/bin/python -m pytest tests/unit -q
 ```
 
 ## AC 검증 방법
