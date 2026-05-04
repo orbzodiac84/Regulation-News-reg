@@ -19,7 +19,9 @@
     {
       "phase": 2,
       "name": "backend-source",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-04T13:40:08+0900",
+      "completed_at": "2026-05-04T13:43:00+0900"
     },
     {
       "phase": 3,
