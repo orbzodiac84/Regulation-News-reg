@@ -33,7 +33,10 @@
     {
       "phase": 4,
       "name": "news-card-ui",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-04T13:46:48+0900",
+      "completed_at": "2026-05-04T13:50:22+0900",
+      "output": "browser screenshot unavailable; Playwright 실행 파일 없음. NewsCard.test.tsx에서 min-w-0/shrink-0/min-w-[64px]와 오른쪽 컬럼 순서를 검증함."
     }
   ]
 }
