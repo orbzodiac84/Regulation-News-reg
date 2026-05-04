@@ -1,0 +1,33 @@
+{
+  "project": "reg_brief",
+  "task": "mobile-time-display",
+  "prompt": "$cross-review-codex $cross-review-codex 모바일 웹에 실제로 기사 또는 보도자료가 발행된시각(그게 없으면 크론으로 현재 DB에 수집된 시간 : 한국시간 기준)으로 적용되어 보이게 하면 좋겠어. 보이는건 각 보도자료 카드 옆쪽에 보이면 될거같은데. 어떻게 해야될지 아이디어 줘봐.",
+  "totalPhases": 4,
+  "build_command": "python3 -m pytest tests/unit -q && cd web && npm run lint && npm run build && npm run test",
+  "commit_prefix": "feat",
+  "branch_prefix": "feat",
+  "push_on_complete": false,
+  "created_at": "2026-05-04T13:15:28+0900",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "schema-contract",
+      "status": "pending"
+    },
+    {
+      "phase": 2,
+      "name": "backend-source",
+      "status": "pending"
+    },
+    {
+      "phase": 3,
+      "name": "frontend-time-helper",
+      "status": "pending"
+    },
+    {
+      "phase": 4,
+      "name": "news-card-ui",
+      "status": "pending"
+    }
+  ]
+}
