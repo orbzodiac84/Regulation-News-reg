@@ -12,7 +12,8 @@
     {
       "phase": 1,
       "name": "schema-contract",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-04T13:34:32+0900"
     },
     {
       "phase": 2,
