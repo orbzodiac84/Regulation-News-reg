@@ -8,7 +8,7 @@ from email.utils import parsedate_to_datetime
 from typing import List, Dict, Optional
 
 from src.config.agency_codes import PublishedAtSource
-from src.collectors.date_parser import has_specific_time
+from src.collectors.result import CollectionResult, FailureKind, failure_kind
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,16 @@ def parse_date(date_str: str) -> Optional[datetime]:
         # Convert to KST if it's UTC
         return dt.astimezone(KST)
     except Exception:
-        return None
+        pass
+
+    for fmt in ('%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S'):
+        try:
+            parsed = datetime.strptime(date_str.strip(), fmt)
+            return parsed.replace(tzinfo=KST)
+        except ValueError:
+            continue
+
+    return None
 
 def fetch_rss_feed(agency: Dict) -> List[Dict]:
     """
@@ -60,7 +69,7 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
     # 2. Get URL (support new 'url' or old 'rss_url')
     target_url = agency.get('url') or agency.get('rss_url')
     if not target_url:
-        return []
+        return CollectionResult(failures=[FailureKind.CONFIG])
 
     logger.info(f"Fetching RSS for {agency.get('name', 'Unknown')}...")
     
@@ -95,25 +104,30 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
                 time.sleep(sleep_s)
                 continue
             logger.warning(f"  > Error processing URL {target_url} after {attempt} attempts: {e}")
-            return []
+            return CollectionResult(failures=[failure_kind(e)])
         except Exception as e:
             # HTTP errors / parser errors / other — do NOT retry. If the server
             # actually answered with 4xx/5xx that is its final word and hammering
             # the endpoint risks getting blocklisted.
             logger.error(f"  > Error processing URL {target_url}: {e}")
-            return []
+            return CollectionResult(failures=[failure_kind(e)])
 
     if response is None:
         logger.error(f"  > Error processing URL {target_url}: {last_err}")
-        return []
+        return CollectionResult(failures=[FailureKind.CONNECTION])
 
     # Parse XML content
-    feed = feedparser.parse(response.content)
+    try:
+        feed = feedparser.parse(response.content)
+    except Exception:
+        return CollectionResult(failures=[FailureKind.PARSE])
+    parsed_items = CollectionResult()
+    if not feed.get("version") or feed.get("bozo"):
+        parsed_items.fail(FailureKind.PARSE)
 
     if hasattr(feed, 'bozo') and feed.bozo:
         logger.warning(f"  > Warning: Feed parsing issue for {agency.get('name')}: {feed.bozo_exception}")
 
-    parsed_items = []
     real_dates: List[datetime] = []
     if not feed.entries:
         logger.warning(f"  > No entries found in feed.")
@@ -122,32 +136,25 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
         # Extract fields
         title = entry.get('title', '').strip()
         link = entry.get('link', '').strip()
+        if not title or not link:
+            parsed_items.fail(FailureKind.PARSE)
+            continue
         if link.startswith('http://'):
             link = 'https://' + link[7:]
         
         # Date parsing - try 'published' first, then 'updated' as fallback
         published = entry.get('published', '') or entry.get('updated', '')
         
-        # FSC RSS uses 'YYYY-MM-DD HH:MM:SS' format in 'updated' field
         published_at = parse_date(published)
-        if not published_at and published:
-            # Try parsing FSC format: "2026-01-02 00:00:00"
-            try:
-                from datetime import datetime as dt
-                parsed = dt.strptime(published, '%Y-%m-%d %H:%M:%S')
-                published_at = parsed.replace(tzinfo=KST)
-            except ValueError:
-                pass
         
         # Get ID (support 'code' or 'id')
         agency_id = agency.get('code') or agency.get('id')
         
         if published_at:
             real_dates.append(published_at)
-        has_source_time = has_specific_time(published)
         published_at_source = (
             PublishedAtSource.SOURCE.value
-            if published_at and has_source_time
+            if published_at
             else PublishedAtSource.COLLECTED_FALLBACK.value
         )
 
@@ -157,7 +164,7 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
             'link': link,
             'published_at': (
                 published_at.isoformat()
-                if published_at and has_source_time
+                if published_at
                 else datetime.now(KST).isoformat()
             ),
             'published_at_source': published_at_source,
@@ -186,16 +193,22 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
 
 def collect_all_rss() -> List[Dict]:
     agencies = load_agencies()
-    all_items = []
-    
+    all_items = CollectionResult()
+
     for agency in agencies:
+        if agency.get('collection_method', 'rss') != 'rss':
+            continue
+        code = agency.get('code') or agency.get('id')
         try:
             items = fetch_rss_feed(agency)
-            all_items.extend(items)
-            logger.info(f"  > Found {len(items)} items.")
         except Exception as e:
             logger.error(f"  > Error fetching {agency['name']}: {e}")
-            
+            items = CollectionResult(failures=[failure_kind(e)])
+        all_items.extend(items)
+        all_items.sources[code] = items
+        logger.info("[%s] RSS candidates: %s; status: %s", code, len(items),
+                    getattr(items, 'status', 'success' if items else 'empty'))
+
     return all_items
 
 if __name__ == "__main__":

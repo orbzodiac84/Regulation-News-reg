@@ -4,8 +4,8 @@ import { pressAgencies, regulationAgencies, sanctionAgencies } from '@/component
 type QueryResult = { data: unknown[] | null; error: unknown; reject?: Error }
 type QueryChain = {
   fromTable: string
-  select: ReturnType<typeof vi.fn>; in: ReturnType<typeof vi.fn>; or: ReturnType<typeof vi.fn>
-  eq: ReturnType<typeof vi.fn>; order: ReturnType<typeof vi.fn>; limit: ReturnType<typeof vi.fn>
+  select: ReturnType<typeof vi.fn<unknown[], QueryChain>>; in: ReturnType<typeof vi.fn<unknown[], QueryChain>>; or: ReturnType<typeof vi.fn<unknown[], QueryChain>>
+  eq: ReturnType<typeof vi.fn<unknown[], QueryChain>>; order: ReturnType<typeof vi.fn<unknown[], QueryChain>>; limit: ReturnType<typeof vi.fn<unknown[], Promise<QueryResult>>>
 }
 
 let queryResults: QueryResult[] = []
@@ -17,12 +17,12 @@ function emptyResults(): QueryResult[] {
 
 function makeChain(fromTable: string, result: QueryResult): QueryChain {
   const chain = { fromTable } as QueryChain
-  chain.select = vi.fn(() => chain)
-  chain.in = vi.fn(() => chain)
-  chain.or = vi.fn(() => chain)
-  chain.eq = vi.fn(() => chain)
-  chain.order = vi.fn(() => chain)
-  chain.limit = vi.fn(() => result.reject ? Promise.reject(result.reject) : Promise.resolve(result))
+  chain.select = vi.fn<unknown[], QueryChain>(() => chain)
+  chain.in = vi.fn<unknown[], QueryChain>(() => chain)
+  chain.or = vi.fn<unknown[], QueryChain>(() => chain)
+  chain.eq = vi.fn<unknown[], QueryChain>(() => chain)
+  chain.order = vi.fn<unknown[], QueryChain>(() => chain)
+  chain.limit = vi.fn<unknown[], Promise<QueryResult>>(() => result.reject ? Promise.reject(result.reject) : Promise.resolve(result))
   return chain
 }
 
@@ -126,7 +126,7 @@ describe('/api/articles', () => {
 
   it('keeps the three category query contracts', async () => {
     await callGet()
-    const selectedColumns = 'id,title,agency,category,published_at,published_at_source,created_at,link,analysis_result,view_count,star_rating'
+    const selectedColumns = 'id,title,agency,category,published_at,published_at_source,created_at,link,source_org,source_name,subcategory,analysis_result,view_count,star_rating'
 
     expect(chains.map(chain => chain.fromTable)).toEqual(['articles', 'articles', 'articles'])
     expect(chains.map(chain => chain.select.mock.calls[0][0])).toEqual([selectedColumns, selectedColumns, selectedColumns])

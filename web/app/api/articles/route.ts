@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 import { pressAgencies, regulationAgencies, sanctionAgencies } from '@/components/dashboard/constants'
 
 const ARTICLE_COLUMNS =
-    'id,title,agency,category,published_at,published_at_source,created_at,link,analysis_result,view_count,star_rating'
+    'id,title,agency,category,published_at,published_at_source,created_at,link,source_org,source_name,subcategory,analysis_result,view_count,star_rating'
 
 const ARTICLE_CATEGORY = {
     press: 'press_release',
@@ -20,6 +20,7 @@ type SafeAnalysisResult = {
     importance_score?: number
     risk_level?: string
     keywords?: string[]
+    pdf_url?: string
 }
 
 type SafeArticle = {
@@ -31,14 +32,53 @@ type SafeArticle = {
     published_at_source?: string | null
     created_at?: string | null
     link: string
+    source_org?: string | null
+    source_name?: string | null
+    subcategory?: string | null
     analysis_result: SafeAnalysisResult | null
     view_count?: number | null
     star_rating?: number | null
 }
 
+const KFB_TITLE_META_RE = /^(.+?)\s+(\d{4}[./-]\d{2}[./-]\d{2})(?:\s+\d+)?$/
+
+function normalizeKfbArticle(article: SafeArticle): SafeArticle {
+    if (article.agency !== 'KFB') return article
+
+    const match = article.title.match(KFB_TITLE_META_RE)
+    if (!match) return article
+
+    const cleanTitle = match[1].trim()
+    const cleanDate = match[2].replace(/\//g, '-').replace(/\./g, '-')
+    const publishedAt = `${cleanDate}T00:00:00+09:00`
+
+    return {
+        ...article,
+        title: cleanTitle,
+        published_at: publishedAt,
+        published_at_source: 'source',
+    }
+}
+
+function normalizeSupabaseUrl(value: string | undefined): string | undefined {
+    const trimmed = value?.trim()
+    if (!trimmed) return undefined
+
+    try {
+        const parsed = new URL(trimmed)
+        if (parsed.hostname.endsWith('.supabase.co')) {
+            return parsed.origin
+        }
+    } catch {
+        return trimmed
+    }
+
+    return trimmed
+}
+
 function getEnv() {
     const useV2 = process.env.NEXT_PUBLIC_USE_V2_DB === 'true'
-    const supabaseUrl = useV2
+    const rawSupabaseUrl = useV2
         ? process.env.NEXT_PUBLIC_SUPABASE_URL_V2
         : process.env.NEXT_PUBLIC_SUPABASE_URL
     const anonKey = useV2
@@ -46,7 +86,7 @@ function getEnv() {
         : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     return {
-        supabaseUrl,
+        supabaseUrl: normalizeSupabaseUrl(rawSupabaseUrl),
         supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY || anonKey,
     }
 }
@@ -67,6 +107,7 @@ function sanitizeAnalysisResult(value: unknown): SafeAnalysisResult | null {
     if (typeof value.importance_score === 'number') result.importance_score = value.importance_score
     if (typeof value.risk_level === 'string') result.risk_level = value.risk_level
     if (isStringArray(value.keywords)) result.keywords = value.keywords
+    if (typeof value.pdf_url === 'string') result.pdf_url = value.pdf_url
 
     return Object.keys(result).length > 0 ? result : null
 }
@@ -92,7 +133,7 @@ function sanitizeArticle(row: RawArticleRow): SafeArticle | null {
         analysis_result: sanitizeAnalysisResult(row.analysis_result),
     }
 
-    for (const key of ['category', 'published_at_source', 'created_at'] as const) {
+    for (const key of ['category', 'published_at_source', 'created_at', 'source_org', 'source_name', 'subcategory'] as const) {
         if (typeof row[key] === 'string' || row[key] === null) {
             article[key] = row[key]
         }
@@ -103,7 +144,7 @@ function sanitizeArticle(row: RawArticleRow): SafeArticle | null {
         }
     }
 
-    return article
+    return normalizeKfbArticle(article)
 }
 
 export async function GET() {

@@ -4,17 +4,25 @@
       "code": "FSC",
       "name": "금융위 (FSC)",
       "category": "press_release",
-      "collection_method": "rss",
-      "url": "https://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111",
-      "base_url": "https://www.fsc.go.kr"
+      "collection_method": "scraper",
+      "url": "https://www.fsc.go.kr/no010101",
+      "base_url": "https://www.fsc.go.kr/no010101",
+      "selector": {
+        "list": ".board-list-wrap > ul > li",
+        "title": ".subject a",
+        "date": ".day",
+        "link": ".subject a",
+        "content": ".board-view-wrap > .body > .cont",
+        "content_title": ".board-view-wrap > .header > .subject"
+      }
     },
     {
       "code": "MOEF",
       "name": "기재부 (MOEF)",
       "category": "press_release",
       "collection_method": "rss",
-      "url": "https://www.korea.kr/rss/dept_mofe.xml",
-      "base_url": "https://www.korea.kr"
+      "url": "https://mofe.go.kr/com/detailRssTagService.do?bbsId=MOSFBBS_000000000028",
+      "base_url": "https://mofe.go.kr"
     },
     {
       "code": "FSS",
@@ -28,7 +36,8 @@
         "title": "td.title a",
         "date": "td:nth-of-type(4)",
         "link": "td.title a",
-        "content": ".dbdata"
+        "content": ".krds-bd-view > .n-dbdata",
+        "content_title": ".krds-bd-view > .sub-info > .subject"
       }
     },
     {
@@ -84,11 +93,12 @@
       "url": "https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488",
       "base_url": "https://www.fss.or.kr/fss/job/lrgRegItnInfo/list.do?menuNo=200488",
       "selector": {
-        "list": ".bd-list tbody tr",
-        "title": "td:nth-child(2) a",
+        "list": "table.list-data tbody tr",
+        "title": "td.title a",
         "date": "td:nth-child(3)",
-        "link": "td:nth-child(2) a",
-        "content": ".bd-view"
+        "link": "td.title a",
+        "content": ".krds-bd-view > .n-dbdata",
+        "content_title": ".krds-bd-view > .sub-info > .subject"
       }
     },
     {
@@ -100,6 +110,7 @@
       "base_url": "https://www.fss.or.kr",
       "filter_keywords": [
         "은행",
+        "뱅크",
         "금융지주",
         "농협"
       ],
@@ -124,6 +135,7 @@
       "base_url": "https://www.fss.or.kr",
       "filter_keywords": [
         "은행",
+        "뱅크",
         "금융지주",
         "농협"
       ],
@@ -137,6 +149,31 @@
         "link": "a.b-default",
         "content": ".bd-view",
         "pdf_link": "a[href*='hpdownload']"
+      }
+    },
+    {
+      "code": "KFB",
+      "name": "은행연합회",
+      "category": "press_release",
+      "collection_method": "rss_first",
+      "url": "https://m.kfb.or.kr/news/info_news.php",
+      "base_url": "https://m.kfb.or.kr",
+      "fallback_urls": [
+        "https://www.kfb.or.kr/news/info_news.php",
+        "http://m.kfb.or.kr/news/info_news.php",
+        "http://www.kfb.or.kr/news/info_news.php"
+      ],
+      "source_org": "KFB",
+      "source_name": "은행연합회",
+      "subcategory": "bank_association_press",
+      "lookback_days": 30,
+      "selector": {
+        "list": "table tbody tr, .board_list li, .bbs-list li, .list li",
+        "title": "a",
+        "date": ".date, td.date, span.date, td:nth-of-type(3), td:nth-of-type(4)",
+        "content": ".panViewArea .viewInfo > .txt",
+        "attachment_links": "a[href*='download'], a[href$='.pdf'], a[href$='.hwp'], a[href$='.hwpx'], a[href$='.doc'], a[href$='.docx'], a[href$='.xls'], a[href$='.xlsx']",
+        "content_title": ".panViewArea .viewInfo > li.title"
       }
     },
     {

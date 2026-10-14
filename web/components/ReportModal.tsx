@@ -6,6 +6,8 @@ import ReactMarkdown from 'react-markdown'
 import type { Components } from 'react-markdown'
 import { X, Printer } from 'lucide-react'
 import type { Article } from './dashboard/NewsCard'
+import SanctionReportModal from './SanctionReportModal'
+import { sanctionAgencies } from './dashboard/constants'
 
 interface ReportModalProps {
     isOpen: boolean
@@ -13,7 +15,14 @@ interface ReportModalProps {
     article: Article | null
 }
 
-export default function ReportModal({ isOpen, onClose, article }: ReportModalProps) {
+export default function ReportModal(props: ReportModalProps) {
+    if (props.article && sanctionAgencies.some(code => code === props.article!.agency)) {
+        return props.isOpen ? <SanctionReportModal key={props.article.id} article={props.article} onClose={props.onClose} /> : null
+    }
+    return <StandardReportModal {...props} />
+}
+
+function StandardReportModal({ isOpen, onClose, article }: ReportModalProps) {
     const [loading, setLoading] = useState(false)
     const [report, setReport] = useState<string | null>(null)
     const articleId = article?.id
@@ -103,7 +112,7 @@ export default function ReportModal({ isOpen, onClose, article }: ReportModalPro
                             <span className="text-lg">✨</span>
                         </div>
                         <div>
-                            <h2 className="text-sm font-bold text-slate-900 tracking-tight">AI 심층 분석 리포트</h2>
+                            <h2 className="text-sm font-bold text-slate-900 tracking-tight">AI 분석 리포트</h2>
                             <p className="text-xs text-slate-500 font-medium">{article.agency} • {new Date().toLocaleDateString()}</p>
                         </div>
                     </div>

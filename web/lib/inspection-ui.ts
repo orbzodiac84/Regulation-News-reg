@@ -1,0 +1,30 @@
+export const INSPECTION_STATUS: Record<string, string> = {
+    queued: '분석 대기', processing: '분석 중', needs_review: '초안 검토 필요', failed: '분석 실패', stale: '규정 변경 · 재분석 필요',
+}
+export const INSPECTION_ERRORS: Record<string, string> = {
+    pdf_missing: '등록된 PDF 주소가 없습니다.', unsafe_pdf_url: '허용된 금감원 HTTPS 주소가 아닙니다.',
+    ocr_required: '이미지가 포함되거나 텍스트가 부족한 페이지가 있어 OCR 또는 원문 확인이 필요합니다.',
+    encrypted_pdf: '암호화된 PDF입니다.', pdf_limit: 'PDF 처리 범위를 초과했습니다.',
+    reference_review_required: '법령 또는 조문 참조를 확인해야 합니다.', context_review_required: '관련 조문 범위를 검토해야 합니다.',
+    documents_changed: '업무규정이 변경되었습니다. 다시 분석해 주세요.', lease_expired: '작업 시간이 초과되었습니다. 재실행 전에 worker 상태를 확인해 주세요.',
+    rate_limited: 'AI 요청 한도를 초과했습니다. 잠시 후 다시 실행해 주세요.',
+    insufficient_quota: 'AI API 크레딧 또는 사용 한도가 소진되었습니다. 결제·사용량 설정을 확인한 뒤 다시 분석해 주세요.',
+    credit_balance_exhausted: 'AI API 선불 크레딧이 소진되었습니다. 크레딧을 충전한 뒤 다시 분석해 주세요.',
+    organization_spend_limit_exceeded: 'AI API 조직 지출 한도에 도달했습니다. 조직 결제 설정을 확인해 주세요.',
+    project_spend_limit_exceeded: 'AI API 프로젝트 지출 한도에 도달했습니다. 프로젝트 결제 설정을 확인해 주세요.',
+    organization_usage_limit_exceeded: 'AI API 조직 사용 한도에 도달했습니다. API 제공업체의 한도 승인이 필요합니다.',
+    usage_limit_exceeded: 'AI API 결제 또는 사용 한도에 도달했습니다. 결제·사용량 설정을 확인해 주세요.',
+    invalid_duty_master: '업무원장의 형식 또는 버전을 확인해야 합니다.',
+    invalid_duty_reference: 'AI가 선택한 업무 ID를 확인해야 합니다.',
+    invalid_department: 'AI 결과의 부서 연결이 업무원장 또는 조직 목록과 일치하지 않습니다. 다시 분석하거나 관리자 검토가 필요합니다.',
+    finding_coverage_failed: '일부 지적사항의 부서 연결이 누락되어 검토가 필요합니다.',
+}
+export type InspectionJob = { automation_status?: string; id: string; article_id: string; status: string; error_code: string | null; result?: InspectionDraft | null; review_revision?: number; review_draft?: import('./publication').PublicationReport | null }
+export type InspectionDraft = {
+    analysis_basis?: 'organization' | 'duty_master'
+    master_version?: string
+    master_fingerprint?: string
+    findings: { id: string; title: string; summary: string; evidence: { page: number; quote: string }[] }[]
+    matches: { finding_id: string; department: string; rationale: string; related_work?: string; duty_ids?: string[]; duty_basis?: 'explicit' | 'inferred' | 'limited'; duty_sources?: { unit: string; document: string; article: string; location: string }[]; evidence: { ref: string; quote: string }[]; checks: { question: string; evidence_to_request: string }[] }[]
+    unmatched_finding_ids: string[]
+}

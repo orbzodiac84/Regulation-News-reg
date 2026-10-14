@@ -8,9 +8,12 @@ from typing import Dict, List, Optional
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
+from src.collectors.urls import canonical_article_url
+
+from src.collectors.result import CollectionResult, FailureKind, failure_kind, has_empty_marker
 
 from src.config import settings
-from src.config.agency_codes import PublishedAtSource
+from src.config.agency_codes import AgencyCode, PublishedAtSource
 from src.config.agency_loader import get_ssl_verify
 from src.collectors import http
 from src.collectors.date_parser import KST, has_specific_time, parse_date
@@ -21,6 +24,37 @@ logger = logging.getLogger(__name__)
 
 
 MAX_PAGES = 15
+
+BOK_EXCLUDED_NOTICE_KEYWORDS = (
+    'RP매입',
+    'RP 매입',
+    'RP매각',
+    'RP 매각',
+    '채용',
+    '입찰',
+    '낙찰',
+    '계약직',
+    '신입직원',
+    '경력직원',
+    '직원 모집',
+    '직원모집',
+    '청년인턴',
+    '인턴 모집',
+    '제안요청',
+    '제안 요청',
+    '견적 제출',
+    '용역 공고',
+    '구매 공고',
+)
+
+
+def _is_bok_excluded_notice(agency_config: Dict, title: str, link: str) -> bool:
+    """Return True for BOK recruitment/procurement notices we do not collect."""
+    if agency_config.get('code') != AgencyCode.BOK.value:
+        return False
+
+    text = f"{title} {link}".casefold()
+    return any(keyword.casefold() in text for keyword in BOK_EXCLUDED_NOTICE_KEYWORDS)
 
 
 def fetch_list_items(
@@ -40,7 +74,7 @@ def fetch_list_items(
 
     if not base_url or not list_selector:
         logger.error(f"[{agency_config.get('code')}] Missing URL or list selector.")
-        return []
+        return CollectionResult(failures=[FailureKind.CONFIG])
 
     now_kst = datetime.now(KST)
 
@@ -57,7 +91,7 @@ def fetch_list_items(
         cutoff_date = max_cutoff
         logger.info(f"[{agency_config.get('code')}] Full Scan (7d): > {cutoff_date.strftime('%Y-%m-%d')}")
 
-    all_items: List[Dict] = []
+    all_items = CollectionResult()
     page = 1
 
     while page <= MAX_PAGES:
@@ -73,6 +107,8 @@ def fetch_list_items(
             rows = soup.select(list_selector)
 
             if not rows:
+                if not has_empty_marker(soup, selectors):
+                    all_items.fail(FailureKind.PARSE)
                 if page == 1:
                     logger.warning(f"[{agency_config.get('code')}] No items found on Page 1 (Selector: {list_selector})")
                 else:
@@ -88,10 +124,15 @@ def fetch_list_items(
                     title_elem = row.select_one(title_sel) if title_sel else row.select_one('a')
 
                     if not title_elem:
+                        if not has_empty_marker(soup, selectors):
+                            all_items.fail(FailureKind.PARSE)
                         continue
 
                     title = title_elem.get_text(strip=True)
                     link_href = title_elem.get('href')
+                    if not title or not link_href:
+                        all_items.fail(FailureKind.PARSE)
+                        continue
 
                     if link_href:
                         if not link_href.startswith('http'):
@@ -100,6 +141,11 @@ def fetch_list_items(
                             link = link_href
                     else:
                         link = base_url
+                    link = canonical_article_url(link)
+
+                    if _is_bok_excluded_notice(agency_config, title, link):
+                        logger.info(f"    > Skipping BOK excluded notice: {title[:60]}")
+                        continue
 
                     date_sel = selectors.get('date')
                     date_str = ""
@@ -138,6 +184,7 @@ def fetch_list_items(
                         })
 
                 except Exception as e:
+                    all_items.fail(FailureKind.PARSE)
                     logger.error(f"Error parsing row: {e}")
                     continue
 
@@ -155,6 +202,7 @@ def fetch_list_items(
             page += 1
 
         except Exception as e:
+            all_items.fail(failure_kind(e))
             logger.error(f"[{agency_config.get('code')}] Error fetching page {page}: {e}")
             break
 

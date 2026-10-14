@@ -1,0 +1,49 @@
+name: Sanction Analysis and Publication
+
+on:
+  workflow_call:
+    inputs:
+      collector_ready:
+        type: boolean
+        required: true
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: sanction-private-automation
+  cancel-in-progress: false
+
+jobs:
+  analyze-and-publish:
+    if: >-
+      vars.SANCTION_AUTOMATION_ENABLED == 'true' &&
+      github.ref == 'refs/heads/main' &&
+      (inputs.collector_ready == true || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      # Pin the trusted main caller commit; never execute downloaded artifacts.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - name: Install analysis dependencies
+        run: python -m pip install -r requirements-inspections.txt
+      - name: Analyze and publish bounded batch
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_V2 }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_V2 }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_INSPECTION_MODEL: ${{ vars.OPENAI_INSPECTION_MODEL }}
+          OPENAI_INSPECTION_POLICY_CONFIRMED: ${{ vars.OPENAI_INSPECTION_POLICY_CONFIRMED }}
+          SANCTION_AUTOMATION_TOKEN: ${{ secrets.SANCTION_AUTOMATION_TOKEN }}
+          SANCTION_WEB_URL: ${{ vars.SANCTION_WEB_URL }}
+          SANCTION_AUTOMATION_SINCE: ${{ vars.SANCTION_AUTOMATION_SINCE }}
+          SANCTION_BATCH_LIMIT: '3'
+          SANCTION_INSPECTIONS_ENABLED: 'true'
+          SANCTION_AUTOMATION_ENABLED: 'true'
+        run: python -m src.services.sanction_inspections.batch

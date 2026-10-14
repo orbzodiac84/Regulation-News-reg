@@ -15,7 +15,7 @@
 - **Secondary (Dev/Debug)**: Local Python Environment (Manual Trigger).
 
 ### 2.2 Collection Schedule
-- **Schedule**: Triggered externally by cron-job.org via GitHub `workflow_dispatch` on `news_collector_v2_active.yml`. The GitHub Actions `schedule:` block in the workflow is intentionally disabled — see workflow comment. The exact interval is configured in cron-job.org outside this repo.
+- **Schedule**: External cron-job.org triggers `news_collector_v2_active.yml` through `workflow_dispatch` three times per day at **08:00, 12:00, and 18:00 KST**. GitHub Actions native `schedule:` is intentionally disabled for the collector because scheduled runs can be delayed by GitHub's UTC-based queue.
 - **Legacy Setting**: `settings.COLLECTION_INTERVAL_MINUTES = 10` is **ignored** in Production.
 
 ---
@@ -29,6 +29,7 @@
 | FSS  | Financial Supervisory Service | Scraper (Legacy) | Every 30 mins |
 | MOEF | Ministry of Economy & Finance | RSS | Every 30 mins |
 | BOK  | Bank of Korea | RSS | Every 30 mins |
+| KFB  | Korea Federation of Banks | RSS auto-discovery / HTML fallback | Every 30 mins |
 | **MAFRA** | ~~Ministry of Agriculture~~ | **Not Implemented** | N/A |
 
 ### 3.2 Timezone & Schedule
@@ -46,9 +47,25 @@
 
 ---
 
+Collector integrity clarification (2026-10-05): verified empty feeds, filtered
+lists, and source-configured empty-state markers are successful zero results;
+unexplained zero selector matches are parsing failures. All configured sources
+participate in final health status. Process available items before exiting
+nonzero on collection, configured HTML body, persistence, or DB/config setup
+failures. PDF sanction and unconfigured-body paths are exempt from HTML body
+failure checks. Preserve stored body/analysis when a dedup-key refresh cannot
+provide replacements. New metadata may still be saved with an empty body, with
+the failure exposed in the cycle summary. See `ARCHITECTURE.md` for persistence
+semantics and downstream workflow implications.
+
 ## 4. Analysis & Scoring (분석 요건)
 
 ### 4.0 Runtime Enablement
+
+Private HWP administration is separately gated by `INTERNAL_DOCUMENTS_ENABLED=true`.
+It requires a server service-role key and `ADMIN_USER_IDS`; the shared dashboard
+passcode grants no document access. Stage A extracts documents without AI calls.
+See `docs/internal-documents-setup.md` for deployment prerequisites.
 Gemini-backed analysis is disabled by default. Backend Tier 1/Tier 2
 analysis and the web `/api/report` route run only when `GEMINI_ENABLED` is
 explicitly set to one of `true`, `1`, `yes`, or `on`. If the flag is absent

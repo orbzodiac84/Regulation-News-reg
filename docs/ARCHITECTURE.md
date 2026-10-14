@@ -5,6 +5,19 @@
 **Status**: Round 6-8 hardening complete
 
 ## 1. High-Level Architecture
+
+2026-09-10 사용자 UI 변경: 제재/경영유의 카드의 기존 `AI 심층 보고서` 버튼이
+`SanctionReportModal`을 연다. 게시 API를 기사 UUID로 조회해 요약 브리핑과
+당행 부서·업무·점검 포인트를 보여준다. 일반 기사는 기존 생성 모달을 유지한다.
+별도 제재 Report 하위 메뉴는 제거했고 과거 `/reports/sanctions` 직접 URL은 호환용으로 유지한다.
+사용자가 확인한 운영 주소는 `https://regulation-news-reg-fiu7.vercel.app/`이다.
+
+초기 Report 진입점 구현(아래 내용은 이전 진입점, 현재 주 경로는 카드 모달): Sidebar의 `Report → 재제공시 리포트`는
+`/reports/sanctions`로 연결한다. 기존 인증된 `/api/articles`의 공개 공시 필드만
+`web/lib/sanction-report.ts`에서 변환하고 `useSanctionSources`가 조회 상태를 관리한다.
+이 화면은 최신 공시 최대 1,000건 조회·검색·원문 열기를 제공한다.
+내부 문서 API를 호출하지 않으며 Stage B/C의 AI 부서 매칭·검토 게시 결과는 아직 연결하지 않았다.
+
 The system follows a **Serverless Event-Driven** pattern using GitHub Actions as the primary execution environment.
 
 ```mermaid
@@ -117,6 +130,58 @@ The configured agency count is the length of the `agencies` array in
     `pdf_url`이 있는 항목(주로 sanction)은 insert 직전에 `analysis_result` JSON 안으로 merge되어 단일 컬럼에 저장된다.
 5.  **Alerting**: `notifier.format_and_send()` sends Telegram msg ONLY if `analysis_result` exists.
 
+### Collector persistence and cycle outcome (2026-10-05)
+
+- `CollectionResult` retains the list API and carries connection, HTTP, parsing,
+  or configuration failures, including partial results. Recovered retries and
+  successful KFB fallback do not make the cycle fail.
+- All configured sources are required; no required/optional flag exists today.
+  Valid empty RSS/Atom, rows excluded by date/keyword filters, and a verified
+  `selector.empty` marker are normal empty results. Unexplained zero selector
+  matches (including later pages) are parsing failures. No unverified empty
+  selectors are added to the live configuration.
+- `Pipeline.run()` logs a JSON `Collection summary`: per-source collection
+  status/count, failure categories, confirmed saves, save failures, and body
+  failures. Healthy/partial items are processed before `PipelineRunError` is
+  raised on any collection/body/save or DB/config setup failure. The existing
+  `main.py` handler exits 1; a verified empty cycle exits 0.
+- New metadata can be stored with an empty body; title fallback is not saved as
+  original content. Missing/empty configured HTML bodies count as failures.
+  Intentionally unconfigured bodies and PDF-oriented sanction collection retain
+  metadata-only behavior. Nonempty short bodies retain the soft warning.
+- Dedup-key persistence inserts with conflict-ignore, then PATCHes available
+  body/analysis fields and metadata. Missing/blank content and absent, empty, or
+  `ANALYSIS_FAILED` analysis cannot replace stored values. PDF-only metadata
+  initializes new rows but does not replace existing analysis on refresh.
+  This needs no DB reads of old content, schema changes, or new permissions.
+  These two requests are not a transaction: an insert may survive a failed
+  PATCH. That attempt is reported as a save failure and can be retried safely.
+  Empty write responses are unconfirmed failures; notifications require
+  confirmed persistence and the existing `ANALYZED` condition.
+- FSC uses its official HTML list while its RSS reports maintenance (503).
+  FSC article IDs are canonicalized across legacy RSS query strings and HTML
+  links. Verified FSS/KFB body and FSS_REG_INFO list selectors have recorded
+  official-page regression fixtures. Scoped article titles guard against error
+  pages; navigation/scripts and title-only bodies are rejected.
+- After collection, retry at most five empty FSC/FSS/KFB bodies created within
+  seven days, excluding links already fetched in this cycle. Conditional PATCH
+  updates only content while it is still empty, preserving concurrent repairs,
+  analysis and dates. This is not a historical backfill. Persistent failures
+  among the newest five can delay older retries; offline tests cannot verify
+  production DB state. Network timeout/retry settings remain unchanged.
+- `automation_ready` is true only with DB-confirmed saved or existing sanction
+  candidates and no configuration, cache-read, or save failure. Source/body
+  failures alone do not block usable sanctions. `main.py` emits only this boolean
+  through GITHUB_OUTPUT even on an incomplete cycle.
+- The main-only collector calls the reusable sanction workflow when ready.
+  A separate health job keeps incomplete collection visibly failed without
+  blocking that analysis job. Cancelled/failed setup never unlocks analysis;
+  workflow_run is removed to avoid duplicate triggers. Both workflows serialize
+  their own runs, and analysis retains the existing lease/CAS dedup and batch
+  limit of three. Analysis checks out the trusted caller SHA.
+- Existing external workflow_dispatch collection remains; pushes to main that
+  change collector code/config/workflow also run deployment verification.
+
 ## 4. Key Components Detail
 
 ### 4.1 Hybrid Analyzer (`src/services/analyzer/`)
@@ -208,3 +273,90 @@ passcode는 `/api/auth/login` route 에서 서버측 `APP_PASSCODE` 환경변수
 None일 때 내부 헬퍼로 기본 구성하고, 단위 테스트는 fake를 주입해 외부 I/O 없이
 오케스트레이션 흐름을 검증한다. 프로덕션 호출 경로(`src/main.py`)는 None만
 넘기므로 동작이 동일하다.
+
+### 4.8 Private document administration (Stage A; deployment pending)
+
+`web/app/admin/` 및 `web/app/api/admin/`은 내부 HWP 관리 기능이다.
+기존 passcode와 별도로 Supabase Auth 사용자와 서버 `ADMIN_USER_IDS`를 검증한다.
+관리 API는 자체 권한 확인·Origin 검사·private 응답을 사용하며 일반 쿠키로 접근할 수 없다.
+`INTERNAL_DOCUMENTS_ENABLED`의 명시적 true가 없으면 사용할 수 없다.
+
+문서와 작업은 신규 비공개 테이블·Storage에 기록한다. 독립 실행 진입점
+`python -m src.services.internal_documents.worker`가 작업을 claim하고
+격리된 `parser` subprocess에서 HWP를 조문/업무로 추출한다. 일반 수집기와
+Gemini 경로는 이 문서 데이터를 사용하지 않는다. 원문 검토·활성화 후의
+제재 연결과 일반 결과 게시(Stage B/C)를 아래 별도 경로로 처리한다.
+`src/services/sanction_inspections/`에 공개 페이지 텍스트와 선택 내부 조문을 분리해
+Responses API로 처리하는 분석 라이브러리를 추가했다. 관리자 `/admin/inspections`와
+`/api/admin/inspections`가 비공개 DB 큐에 연결되며 별도
+`python -m src.services.sanction_inspections.worker`가 FSS PDF 다운로드·격리 추출·분석을 수행한다.
+관리자 검토본 편집·게시·철회와 일반 사용자 게시 조회 및 XLSX 내보내기를 추가했다.
+`/api/sanction-publications`는 서명된 일반 세션을 확인하고 별도 게시 테이블에서
+허용된 DTO만 반환한다. 규정 변경·재분석 때 게시 snapshot도 무효화한다.
+운영 배포는 미적용이다. 게시 설정은 `docs/sanction-inspection-publication.md`를 참고한다.
+상세는 `docs/sanction-inspection-execution.md`를 참고한다.
+
+운영 서비스 설정 및 검증은 `docs/internal-documents-setup.md`를 참고한다.
+
+### 4.9 Automatic sanction publication (2026-09-17)
+수집의 DB 확인된 제재 후보 → readiness 게이트 → 재사용 sanction_automation workflow → Python batch → 기존 분석 worker →
+토큰 인증 `/api/admin/inspections/automation` → 기존 공개 DTO/내부 원문 검사 → CAS 자동 게시 RPC.
+새 schema를 먼저 적용하고 웹/Actions 환경변수를 활성화해야 동작한다.
+원문/초안은 private DB에만, 워크플로에는 건수만 출력하며 artifact를 생성하지 않는다.
+같은 공시의 URL 별칭은 동일 게시 결과를 보여주며, 자동 결과는 화면/Excel에 담당자 확인 표식을 둔다.
+운영 안내는 `docs/sanction-automation-setup.md`.
+
+### 4.10 직제규정 기준 전환 (운영 적용 별도)
+운영 제재 worker는 활성 직제규정과 검토된 조문별 조직 목록만 분석에 사용한다. 업무분장규정 fallback은 없다. 조직 목록은 한 번만 AI 입력에 포함하며 부서 후보를 목록으로 제한한다. 업무·점검은 추정으로 표시하고 원문 근거는 비공개 초안에만 둔다. 문서 검토/활성화 이후 자동 게시 경로는 기존 검증을 사용한다. 적용 절차: docs/organization-regulation-setup.md.
+
+### 4.11 공시내규 기반 본부 업무원장 (운영 적용 별도)
+활성 `inspection_duty_masters`가 있으면 worker는 직제규정 대신 불변 원장 버전을 사용한다.
+공개 지적사항 추출 후 축약 원장 전체를 한 번 전달하며, AI는 업무 ID만 선택한다.
+부서·업무 근거 수준·출처는 서버가 원장에서 결합한다. 원문 전체·파일 경로는 AI 입력에서 제외한다.
+요청 한도를 넘으면 검토 필요 오류로 중단한다. 대상·업무 경계의 의미적 적합성은 담당자 확인이 필요하다.
+공개 DTO/화면/Excel은 원장 버전, 업무 ID, 부서별 명시/추정/자료 부족 및 점검별 담당 후보를 보존한다.
+자료 부족 연결은 자동 게시를 보류한다. 원장 교체는 기존 lease·게시 무효화 경계를 공유한다.
+비활성 원장 등록이나 새 migration만으로는 기존 직제규정 결과를 변경하지 않는다.
+등록·활성화·복구 절차: `docs/duty-master-setup.md`.
+
+
+### 4.12 이용자 게시판 (2026-10-05, 운영 적용 별도)
+
+Sidebar의 Report를 `/board` 게시판 링크로 변경한다. 기존 `/api/daily-report`는 게시판 상단에서 연결한다.
+`web/components/board/`는 목록/상세/작성 화면, `web/lib/board/use-board.ts`는 클라이언트 상태·요청,
+`web/lib/board/server.ts`는 검증·권한·저장·첨부 처리, `password.ts`는 scrypt 비밀번호 처리를 맡는다.
+`/api/board` 및 하위 API는 일반 mp_session을 직접 검증하고 변경 요청에 Origin 검사를 적용한다.
+`BOARD_ENABLED`는 독립 기능 플래그다. 관리자 API 인증은 기존 Supabase Auth/ADMIN_USER_IDS를 재사용하고
+scope=board에서 내부 문서 기능 플래그 대신 BOARD_ENABLED를 검사한다. documents 기본 경로는 유지한다.
+
+읽기 → 인증된 서버 → published 게시글 DTO. 수정/삭제 → 글 비밀번호 또는 허용된 관리자 → revision CAS.
+업로드 → 비공개 Storage → 글의 첨부 metadata 원자 저장. 다운로드는 로그인+현재 게시 상태+첨부 연결을
+검증한 서버 응답으로 제공한다. Storage 공개 URL이나 장기 signed URL을 클라이언트에 배포하지 않는다.
+비밀번호 해시와 object path는 서버에서만 사용한다. 게시판 글은 기사 수집·AI 분석 파이프라인에 넣지 않는다.
+신규 migration 및 운영 절차는 `docs/board-setup.md`를 참고한다.
+
+
+### 4.13 게시판 공통 화면 틀 (2026-10-05)
+
+`DashboardFrame`은 대시보드와 게시판의 Sidebar/Header 배치·모바일 drawer·콘텐츠 스크롤 영역을 공유한다.
+게시판 layout의 `BoardShell`은 모든 /board 하위 경로에 공통 메뉴와 현재 위치를 표시한다.
+게시판에서 기사 메뉴로 이동할 때 /?category=...&agency=...를 사용하며 루트 page가 허용된 분류/기관만
+`dashboardSelection`으로 검증해 DashboardV2의 초기 선택에 전달한다. 경로 기반 선택은 모바일 drawer를
+자동 재개방하지 않는다. 게시판 하위 경로 이동 시 콘텐츠 스크롤은 상단으로 돌아간다.
+기존 게시판 URL/API/DB 및 대시보드 내부 분류·검색은 유지한다. PC는 글 목록 행, 모바일/태블릿은 카드를 표시한다.
+
+### 4.14 플랫폼 v3 표기와 게시판 댓글 (2026-10-09, 운영 적용 별도)
+
+공통 Sidebar의 하단 표시를 v3.0.0 (Beta)로 변경하고 연결되지 않은 스크랩 보관함 버튼을 제거한다.
+`BoardDetail`은 published 글 하단에 `BoardComments`를 표시한다.
+`web/lib/board/use-comments.ts`는 최신순 20개 pagination과 작성/수정/삭제·재시도 상태를 관리한다.
+`comments-server.ts`는 입력/부모 상태/댓글 비밀번호·관리자 권한/동시 수정 검증을 담당한다.
+`/api/board/[id]/comments`(GET/POST), `/api/board/[id]/comments/[commentId]`(PATCH/DELETE)는
+기존 boardContext의 세션·BOARD_ENABLED·Origin·쓰기 제한과 boundedJson/privateJson을 재사용한다.
+
+인증된 이용자 → 작성자 이름/내용/댓글 비밀번호 → scrypt hash → private board_comments 저장.
+조회는 공개 상태 부모와 댓글 DTO를 연결하며 해시·비밀번호를 반환하지 않는다.
+댓글은 HTML/Markdown 실행 없는 일반 텍스트로 표시한다. 수정/삭제는 해당 댓글의 비밀번호 또는
+검증된 기존 관리자 세션이 필요하며 댓글별 비밀번호 제한(10회/15분)을 적용한다.
+SQL published-parent trigger와 revision CAS를 함께 적용하며 글 삭제 시 댓글은 cascade 삭제한다.
+기사·AI·첨부·기존 게시글 API 계약은 유지한다. 신규 migration 적용은 별도 운영 단계다.
