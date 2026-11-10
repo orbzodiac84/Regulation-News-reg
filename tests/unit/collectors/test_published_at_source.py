@@ -81,6 +81,8 @@ def _today_compact() -> str:
     [
         ("Tue, 05 May 2026 09:00:00 +0900", PublishedAtSource.SOURCE.value),
         ("Tue, 05 May 2026 00:00:00 +0900", PublishedAtSource.COLLECTED_FALLBACK.value),
+        ("2026-11-09 11:06:14.0", PublishedAtSource.SOURCE.value),
+        ("2026-10-25 00:00:00.0", PublishedAtSource.COLLECTED_FALLBACK.value),
         ("not a date", PublishedAtSource.COLLECTED_FALLBACK.value),
     ],
 )

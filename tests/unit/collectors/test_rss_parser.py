@@ -265,3 +265,24 @@ class TestFetchRssFeed:
         assert published_at.startswith("2026-04-02T09:00:00")
         # KST offset serialized.
         assert "+09:00" in published_at
+
+    def test_fractional_seconds_date_format_parses(
+        self, monkeypatch, no_sleep, fresh_agency
+    ):
+        # MOEF official RSS (mofe.go.kr) emits "YYYY-MM-DD HH:MM:SS.f" in
+        # <pubDate>. Without this fallback every item silently degrades to
+        # the collected-at timestamp.
+        entries = (
+            "<item><title>MOEF</title><link>https://example.com/moef</link>"
+            "<pubDate>2026-11-09 11:06:14.0</pubDate></item>"
+        )
+        xml = _rss_xml(entries)
+
+        def fake_get(url, **kwargs):
+            return _make_response(xml)
+
+        monkeypatch.setattr("requests.get", fake_get)
+
+        items = fetch_rss_feed(fresh_agency)
+        assert len(items) == 1
+        assert items[0]["published_at"] == "2026-11-09T11:06:14+09:00"

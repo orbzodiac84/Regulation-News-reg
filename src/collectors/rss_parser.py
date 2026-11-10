@@ -27,6 +27,11 @@ RSS_STALE_WARN_DAYS = 14
 RSS_FETCH_MAX_ATTEMPTS = 3
 RSS_FETCH_RETRY_BACKOFF_SECONDS = (3.0, 5.0)  # sleep before retry #1, retry #2
 
+# Non-RFC 822 <pubDate> formats seen in agency feeds, tried after RFC 822.
+#   - FSC:  "2026-01-02 00:00:00"
+#   - MOEF (mofe.go.kr official RSS): "2026-11-09 11:06:14.0"
+RSS_FALLBACK_DATE_FORMATS = ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M:%S.%f')
+
 # Load config
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config', 'agencies.json')
 
@@ -128,16 +133,15 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
         # Date parsing - try 'published' first, then 'updated' as fallback
         published = entry.get('published', '') or entry.get('updated', '')
         
-        # FSC RSS uses 'YYYY-MM-DD HH:MM:SS' format in 'updated' field
+        # FSC / MOEF feeds use non-RFC 822 formats (see RSS_FALLBACK_DATE_FORMATS)
         published_at = parse_date(published)
         if not published_at and published:
-            # Try parsing FSC format: "2026-01-02 00:00:00"
-            try:
-                from datetime import datetime as dt
-                parsed = dt.strptime(published, '%Y-%m-%d %H:%M:%S')
-                published_at = parsed.replace(tzinfo=KST)
-            except ValueError:
-                pass
+            for fmt in RSS_FALLBACK_DATE_FORMATS:
+                try:
+                    published_at = datetime.strptime(published, fmt).replace(tzinfo=KST)
+                    break
+                except ValueError:
+                    continue
         
         # Get ID (support 'code' or 'id')
         agency_id = agency.get('code') or agency.get('id')
