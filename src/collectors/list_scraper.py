@@ -5,7 +5,7 @@ import random
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 
@@ -21,6 +21,19 @@ logger = logging.getLogger(__name__)
 
 
 MAX_PAGES = 15
+
+
+def canonicalize_link(link: str, agency_config: Dict) -> str:
+    """Drop query/fragment when the agency opts in via ``link_strip_query``.
+
+    Some list pages (e.g. FSC 보도자료) append page-dependent query strings
+    such as ``curPage=2`` to every detail link. The same article would then
+    get a different link once it moves to page 2, defeating link-based dedup.
+    """
+    if not agency_config.get('link_strip_query'):
+        return link
+    parts = urlsplit(link)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, '', ''))
 
 
 def fetch_list_items(
@@ -100,6 +113,7 @@ def fetch_list_items(
                             link = link_href
                     else:
                         link = base_url
+                    link = canonicalize_link(link, agency_config)
 
                     date_sel = selectors.get('date')
                     date_str = ""

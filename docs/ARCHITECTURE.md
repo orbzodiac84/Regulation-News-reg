@@ -155,6 +155,13 @@ per-agency TLS verify 정책을 단일 진실원(`config/agencies.json`)에서 �
   값을 읽어 `http.fetch(url, verify=...)`에 전달.
 - 검증: `.github/workflows/ssl-matrix-check.yml`이 verify on/off 매트릭스로 회귀를 점검.
 
+### 4.1.3 List link canonicalization
+- per-agency opt-in: `config/agencies.json`의 `link_strip_query: true` 필드.
+- 적용: `src/collectors/list_scraper.canonicalize_link()`가 목록에서 얻은 상세 링크의
+  query/fragment를 제거한다. FSC 보도자료 목록은 상세 링크에 `curPage=N`을 붙이므로,
+  제거하지 않으면 같은 글이 2페이지로 밀릴 때 다른 링크가 되어 link 기반 dedup이 깨진다.
+- 상세 링크 식별자가 query에 있는 기관(예: FSC_REG `view?noticeId=`)은 켜면 안 된다.
+
 ### 4.2 Supabase Client (`src/db/client.py`)
 - **Responsibility**: Singleton connection to PostgreSQL.
 - **Connection Logic**:

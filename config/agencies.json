@@ -4,9 +4,17 @@
       "code": "FSC",
       "name": "금융위 (FSC)",
       "category": "press_release",
-      "collection_method": "rss",
-      "url": "https://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111",
-      "base_url": "https://www.fsc.go.kr"
+      "collection_method": "scraper",
+      "url": "https://www.fsc.go.kr/no010101",
+      "base_url": "https://www.fsc.go.kr",
+      "link_strip_query": true,
+      "selector": {
+        "list": ".board-list-wrap li",
+        "title": ".subject a",
+        "date": ".day",
+        "link": ".subject a",
+        "content": ".cont"
+      }
     },
     {
       "code": "MOEF",

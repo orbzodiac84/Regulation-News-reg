@@ -25,7 +25,7 @@
 ### 3.1 Target Agencies
 | Code | Agency | Collection Method | Update Frequency |
 |------|--------|-------------------|------------------|
-| FSC  | Financial Services Commission | RSS / Scraper | Every 30 mins |
+| FSC  | Financial Services Commission | Scraper (보도자료 목록 `/no010101`; 공식 RSS는 "점검 중" 503으로 2026-10 이후 중단) | Every 30 mins |
 | FSS  | Financial Supervisory Service | Scraper (Legacy) | Every 30 mins |
 | MOEF | Ministry of Economy & Finance | RSS | Every 30 mins |
 | BOK  | Bank of Korea | RSS | Every 30 mins |
