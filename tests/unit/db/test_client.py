@@ -45,3 +45,25 @@ def test_get_supabase_client_falls_back_to_anon_key(monkeypatch):
         "url": "https://test.supabase.co",
         "key": "anon-key",
     }
+
+
+def test_select_all_pages_until_a_short_batch():
+    """PostgREST truncates at max-rows (CLAUDE.md T2): keep paging."""
+    from types import SimpleNamespace
+
+    from src.db.client import select_all
+
+    data = [{"id": i} for i in range(5)]
+    ranges = []
+
+    class Query:
+        def range(self, start, end):
+            ranges.append((start, end))
+            self._slice = data[start:end + 1]
+            return self
+
+        def execute(self):
+            return SimpleNamespace(data=self._slice)
+
+    assert select_all(Query, page_size=2) == data
+    assert ranges == [(0, 1), (2, 3), (4, 5)]

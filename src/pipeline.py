@@ -12,7 +12,7 @@ from src.collectors.date_parser import KST
 from src.collectors.source_health import SourceProblem
 from src.config.agency_codes import AgencyCode, ArticleCategory, PublishedAtSource
 from src.config.agency_loader import get_sanction_codes, is_sanction_agency
-from src.db.client import get_supabase_client
+from src.db.client import get_supabase_client, select_all
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,11 @@ def build_article_row(item: Dict) -> Dict:
         "category": item.get('category', ArticleCategory.PRESS_RELEASE),
     }
     return data
+
+
+def _escape_workflow_command(text: str) -> str:
+    """Escape a GitHub Actions workflow-command message (``%``, CR, LF)."""
+    return text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
 
 
 class Pipeline:
@@ -148,29 +153,11 @@ class Pipeline:
         """
         if not self.supabase:
             return set()
-        links: Set[str] = set()
-        page_size = 1000
-        start = 0
         try:
-            while True:
-                res = (
-                    self.supabase
-                    .table('articles')
-                    .select('link')
-                    .range(start, start + page_size - 1)
-                    .execute()
-                )
-                batch = res.data or []
-                for row in batch:
-                    link = row.get('link')
-                    if link:
-                        links.add(link)
-                if len(batch) < page_size:
-                    break
-                start += page_size
+            rows = select_all(lambda: self.supabase.table('articles').select('link'))
         except Exception as e:
             raise DedupStateUnavailable(f"Failed to load existing links: {e}") from e
-        return links
+        return {row['link'] for row in rows if row.get('link')}
 
     def _load_sanction_keys(self) -> Set[SanctionKey]:
         """Load existing sanction identity tuples for all sanction agencies.
@@ -181,35 +168,22 @@ class Pipeline:
         if not self.supabase:
             return set()
         keys: Set[SanctionKey] = set()
-        page_size = 1000
         for agency_code in get_sanction_codes():
-            start = 0
-            while True:
-                try:
-                    res = (
-                        self.supabase
-                        .table('articles')
-                        .select('link')
-                        .eq('agency', agency_code)
-                        .range(start, start + page_size - 1)
-                        .execute()
-                    )
-                except Exception as e:
-                    raise DedupStateUnavailable(
-                        f"Failed to load sanction keys for {agency_code}: {e}"
-                    ) from e
-
-                batch = res.data or []
-                for row in batch:
-                    link = row.get('link')
-                    if not link:
-                        continue
-                    exam_id, seq = extract_sanction_key(link)
-                    if exam_id and seq:
-                        keys.add((str(agency_code), exam_id, seq))
-                if len(batch) < page_size:
-                    break
-                start += page_size
+            try:
+                rows = select_all(
+                    lambda: self.supabase.table('articles').select('link').eq('agency', agency_code)
+                )
+            except Exception as e:
+                raise DedupStateUnavailable(
+                    f"Failed to load sanction keys for {agency_code}: {e}"
+                ) from e
+            for row in rows:
+                link = row.get('link')
+                if not link:
+                    continue
+                exam_id, seq = extract_sanction_key(link)
+                if exam_id and seq:
+                    keys.add((str(agency_code), exam_id, seq))
         return keys
 
     def _load_last_crawled(self, scraper_agencies: List[Dict]) -> Dict[str, datetime]:
@@ -372,7 +346,7 @@ class Pipeline:
                     f"all {len(links)} feed entries are new; entries older than the feed window may be missing",
                 )
 
-    def _report_source_health(self) -> None:
+    def _report_source_health(self, cycle_started_at: datetime) -> None:
         issues = source_health.snapshot()
         if not issues:
             logger.info("Source health: all sources OK.")
@@ -384,23 +358,28 @@ class Pipeline:
                 logger.warning(f"[SOURCE HEALTH] {code}: {issue.problem.value} - {issue.detail}")
                 if in_actions:
                     # Workflow command (stdout) -> annotation on the run summary page.
-                    print(f"::warning title=Source health {code}::{issue.problem.value}: {issue.detail}")
+                    message = _escape_workflow_command(f"{issue.problem.value}: {issue.detail}")
+                    print(f"::warning title=Source health {code}::{message}")
 
-        now_kst = datetime.now(KST)
-        if self.notifier and source_health.is_digest_slot(now_kst):
+        # Slot is judged on the start time: cron-job.org starts runs at :00/:30,
+        # while run length varies (list pacing, detail fetches), so the end time
+        # could fall into the window twice or not at all.
+        if self.notifier and source_health.is_digest_slot(cycle_started_at):
             agency_names = {code: a.get('name', code) for code, a in self.agency_map.items()}
-            self.notifier.send_message(source_health.format_digest(issues, agency_names, now_kst))
+            self.notifier.send_message(source_health.format_digest(issues, agency_names, cycle_started_at))
 
     # ------------------------------------------------------------------
     # Orchestrator
     # ------------------------------------------------------------------
     def run(self):
         logger.info("Starting MarketPulse-Reg Pipeline...")
+        cycle_started_at = datetime.now(KST)
         source_health.reset()
         # An aborted cycle (DedupStateUnavailable) collected nothing to report;
-        # main.py turns it into a critical alert instead.
+        # main.py logs it as critical, which the legacy logger's Telegram
+        # handler sends as a System Alert.
         self._run_cycle()
-        self._report_source_health()
+        self._report_source_health(cycle_started_at)
 
     def _run_cycle(self):
         # Build per-cycle dedup caches (1 query per cache).

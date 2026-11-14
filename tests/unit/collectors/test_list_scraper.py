@@ -231,3 +231,26 @@ def test_reaching_cutoff_is_not_an_overflow(monkeypatch):
     list_scraper.fetch_list_items(_generic_config(), max_pages=1)
 
     assert source_health.snapshot() == {}
+
+
+def test_rows_without_resolvable_links_are_reported(monkeypatch):
+    """MOEF renaming fn_egov_select must not look like 'no new articles'."""
+    config = _generic_config(
+        code="MOEF",
+        link_id_pattern=r"fn_egov_select\('(MOSF_\d+)'\)",
+        link_template="https://www.mofe.go.kr/view?id={id}",
+    )
+    today = datetime.now(KST).strftime("%Y.%m.%d.")
+    _serve(monkeypatch, {1: _rows_html([(f"t{i}", f"javascript:fn_view('X{i}')", today) for i in range(5)])})
+
+    assert list_scraper.fetch_list_items(config) == []
+    assert source_health.snapshot()["MOEF"][0].problem is SourceProblem.EMPTY
+
+
+def test_link_template_without_pattern_fails_loudly(monkeypatch):
+    requested = _serve(monkeypatch, {})
+    config = _generic_config(code="MOEF", link_template="https://x/{id}")
+
+    assert list_scraper.fetch_list_items(config) == []
+    assert requested == []
+    assert source_health.snapshot()["MOEF"][0].problem is SourceProblem.EMPTY

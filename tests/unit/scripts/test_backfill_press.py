@@ -76,3 +76,14 @@ def test_moef_list_config_merges_the_fallback_block():
     assert cfg["collection_method"] == "scraper"
     assert cfg["url"].startswith("https://www.mofe.go.kr/nw/nes/nesdta.do")
     assert "content" not in cfg["selector"]  # MOEF detail pages have no body text
+
+
+def test_walk_with_any_problem_or_no_rows_is_incomplete():
+    from src.collectors.source_health import SourceIssue, SourceProblem
+
+    row = [_listed("MOSF_7", "t", "2026-08-01")]
+    assert backfill.walk_is_complete(row, []) is True
+    # Selector stopped matching: 0 rows must not read as "nothing missing".
+    assert backfill.walk_is_complete([], []) is False
+    assert backfill.walk_is_complete(row, [SourceIssue(SourceProblem.EMPTY, "x")]) is False
+    assert backfill.walk_is_complete(row, [SourceIssue(SourceProblem.FETCH_ERROR, "503")]) is False

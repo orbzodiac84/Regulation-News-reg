@@ -50,7 +50,7 @@ def resolve_link(href: Optional[str], base_url: str, agency_config: Dict, page: 
     """
     template = agency_config.get('link_template')
     if template:
-        match = re.search(agency_config['link_id_pattern'], href or '')
+        match = re.search(agency_config.get('link_id_pattern') or '(?!)', href or '')
         return template.format(id=match.group(1)) if match else None
 
     if href:
@@ -107,6 +107,10 @@ def fetch_list_items(
     if not base_url or not list_selector:
         logger.error(f"[{code}] Missing URL or list selector.")
         return []
+    if agency_config.get('link_template') and not agency_config.get('link_id_pattern'):
+        logger.error(f"[{code}] link_template requires link_id_pattern.")
+        source_health.record(code, SourceProblem.EMPTY, "config: link_template without link_id_pattern")
+        return []
 
     now_kst = datetime.now(KST)
 
@@ -145,6 +149,7 @@ def fetch_list_items(
                 break
 
             page_items: List[Dict] = []
+            linked_rows = 0
 
             for row in rows:
                 try:
@@ -158,6 +163,7 @@ def fetch_list_items(
                     link = resolve_link(title_elem.get('href'), base_url, agency_config, page)
                     if not link:
                         continue
+                    linked_rows += 1
 
                     date_sel = selectors.get('date')
                     date_str = ""
@@ -184,6 +190,13 @@ def fetch_list_items(
                 except Exception as e:
                     logger.error(f"Error parsing row: {e}")
                     continue
+
+            if page == 1 and not linked_rows:
+                # Rows matched but no title/link could be read: markup or link
+                # scheme changed. Same silent-death risk as an empty page.
+                logger.warning(f"[{code}] {len(rows)} rows on Page 1 but no usable title/link.")
+                source_health.record(code, SourceProblem.EMPTY, f"{len(rows)} rows on page 1, no usable title/link")
+                break
 
             if page_items:
                 all_items.extend(page_items)

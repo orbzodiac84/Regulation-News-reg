@@ -40,10 +40,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from src.collectors import content_scraper, list_scraper, source_health  # noqa: E402
 from src.collectors.date_parser import KST  # noqa: E402
-from src.collectors.source_health import SourceProblem  # noqa: E402
 from src.config.agency_codes import PublishedAtSource  # noqa: E402
 from src.config.agency_loader import load_agencies  # noqa: E402
-from src.db.client import get_supabase_client  # noqa: E402
+from src.db.client import get_supabase_client, select_all  # noqa: E402
 from src.pipeline import build_article_row  # noqa: E402
 from src.utils.logger import setup_logger  # noqa: E402
 
@@ -53,7 +52,6 @@ LIST_DELAY_SECONDS = (4.0, 7.0)
 # fetch_content sleeps 2-4 s itself; this tops it up to 4-7 s per detail page.
 CONTENT_EXTRA_DELAY_SECONDS = (2.0, 3.0)
 TITLE_MATCH_WINDOW_DAYS = 2
-DB_PAGE_SIZE = 1000  # PostgREST max-rows (CLAUDE.md T2)
 
 
 def list_config_for(agency: Dict) -> Dict:
@@ -75,21 +73,18 @@ def kst_date(iso: str):
 
 
 def load_existing_rows(db, agency_code: str) -> List[Dict]:
-    rows: List[Dict] = []
-    start = 0
-    while True:
-        batch = (
-            db.table('articles')
-            .select('id,link,title,published_at,published_at_source')
-            .eq('agency', agency_code)
-            .order('id')
-            .range(start, start + DB_PAGE_SIZE - 1)
-            .execute()
-        ).data or []
-        rows.extend(batch)
-        if len(batch) < DB_PAGE_SIZE:
-            return rows
-        start += DB_PAGE_SIZE
+    return select_all(
+        lambda: db.table('articles')
+        .select('id,link,title,published_at,published_at_source')
+        .eq('agency', agency_code)
+        .order('id')
+    )
+
+
+def walk_is_complete(listed: List[Dict], problems) -> bool:
+    """Any recorded problem (fetch error, page cap, empty/unreadable list) or
+    zero listed rows means the walk cannot vouch that nothing is missing."""
+    return bool(listed) and not problems
 
 
 def plan_actions(listed: List[Dict], existing: List[Dict]) -> Dict[str, List[Tuple[Dict, Optional[Dict]]]]:
@@ -133,8 +128,9 @@ def plan_actions(listed: List[Dict], existing: List[Dict]) -> Dict[str, List[Tup
 
 def print_report(agency_code: str, since: datetime, listed: List[Dict], plan, complete: bool) -> None:
     print(f"\n=== Backfill plan: {agency_code} since {since.date()} ===")
-    print(f"listed articles (before today): {sum(1 for i in listed if i['published_at_source'] == 'source')}")
-    print(f"list walk complete: {'yes' if complete else 'NO - stopped early, rerun later to continue'}")
+    past = sum(1 for i in listed if i['published_at_source'] == PublishedAtSource.SOURCE.value)
+    print(f"listed articles (before today): {past}")
+    print(f"list walk complete: {'yes' if complete else 'NO - see source problems above; rerun after fixing'}")
     for action in ('INSERT', 'REDATE', 'SKIP'):
         print(f"{action}: {len(plan[action])}")
 
@@ -203,7 +199,9 @@ def main() -> int:
         list_config_for(agency), since=since, max_pages=args.max_pages, delay_range=LIST_DELAY_SECONDS,
     )
     problems = source_health.snapshot().get(agency['code'], [])
-    complete = not any(p.problem in (SourceProblem.FETCH_ERROR, SourceProblem.WINDOW_OVERFLOW) for p in problems)
+    for problem in problems:
+        print(f"SOURCE PROBLEM: {problem.problem.value} - {problem.detail}")
+    complete = walk_is_complete(listed, problems)
 
     plan = plan_actions(listed, existing)
     print_report(agency['code'], since, listed, plan, complete)

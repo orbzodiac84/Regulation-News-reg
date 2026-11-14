@@ -5,8 +5,10 @@ list page 1 (``...&pageIndex=1``) and later on page N got stored a second
 time as ``...&pageIndex=N`` (FSS/BOK/FSS_REG use ``pageIndex``, FSC_REG
 ``curPage``). On 2026-11-03 a rescan stored 19 such rows.
 
-A row is deleted only when its page-1 twin is stored. Rows without a twin
-are the only copy of that article and are reported but kept.
+Rows are grouped by their page-1 form. In a group of two or more, one row
+is kept - the one with a star rating, then the most views, then the page-1
+link, then the oldest - and the others are deleted, so user engagement is
+never dropped in favour of a bare copy. Single rows are never touched.
 
   python scripts/admin/dedupe_page_links.py           # report
   python scripts/admin/dedupe_page_links.py --apply   # delete
@@ -22,9 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from src.collectors.pagination import normalize_page_param, page_param_name  # noqa: E402
 from src.config.agency_loader import is_sanction_agency, load_agencies  # noqa: E402
-from src.db.client import get_supabase_client  # noqa: E402
-
-DB_PAGE_SIZE = 1000  # PostgREST max-rows (CLAUDE.md T2)
+from src.db.client import get_supabase_client, select_all  # noqa: E402
 
 
 def list_agency_urls() -> Dict[str, str]:
@@ -36,38 +36,48 @@ def list_agency_urls() -> Dict[str, str]:
     }
 
 
-def find_page_link_duplicates(rows: List[Dict], agency_urls: Dict[str, str]) -> Tuple[List[Dict], List[Dict]]:
-    """Return (rows whose page-1 twin is stored, rows with a page>1 link but no twin)."""
-    links = {row['link'] for row in rows}
-    duplicates, orphans = [], []
+def page_number(link: str, base_url: str) -> int:
+    match = re.search(rf'[?&]{page_param_name(base_url)}=(\d+)(?=[&#]|$)', link)
+    return int(match.group(1)) if match else 0
+
+
+def keep_priority(row: Dict, canonical: str) -> Tuple:
+    """Sort key; the smallest is kept."""
+    return (
+        -(row.get('star_rating') or 0),
+        -(row.get('view_count') or 0),
+        row['link'] != canonical,
+        str(row.get('created_at') or ''),
+        str(row['id']),
+    )
+
+
+def find_page_link_duplicates(rows: List[Dict], agency_urls: Dict[str, str]) -> List[Tuple[Dict, List[Dict]]]:
+    """Return ``(kept row, rows to delete)`` per article stored more than once."""
+    groups: Dict[str, List[Dict]] = {}
     for row in rows:
         base_url = agency_urls.get(row.get('agency'))
         if not base_url:
             continue
-        match = re.search(rf'[?&]{page_param_name(base_url)}=(\d+)(?=[&#]|$)', row['link'])
-        if not match or int(match.group(1)) <= 1:
+        canonical = normalize_page_param(row['link'], base_url, page_number(row['link'], base_url))
+        groups.setdefault(canonical, []).append(row)
+
+    result = []
+    for canonical, group in groups.items():
+        if len(group) < 2:
             continue
-        twin = normalize_page_param(row['link'], base_url, int(match.group(1)))
-        (duplicates if twin in links else orphans).append({**row, 'twin': twin})
-    return duplicates, orphans
+        ordered = sorted(group, key=lambda r: keep_priority(r, canonical))
+        result.append((ordered[0], ordered[1:]))
+    return result
 
 
 def load_rows(db, agencies: List[str]) -> List[Dict]:
-    rows: List[Dict] = []
-    start = 0
-    while True:
-        batch = (
-            db.table('articles')
-            .select('id,agency,title,link,created_at,view_count,star_rating')
-            .in_('agency', agencies)
-            .order('id')
-            .range(start, start + DB_PAGE_SIZE - 1)
-            .execute()
-        ).data or []
-        rows.extend(batch)
-        if len(batch) < DB_PAGE_SIZE:
-            return rows
-        start += DB_PAGE_SIZE
+    return select_all(
+        lambda: db.table('articles')
+        .select('id,agency,title,link,created_at,view_count,star_rating')
+        .in_('agency', agencies)
+        .order('id')
+    )
 
 
 def main() -> int:
@@ -78,24 +88,29 @@ def main() -> int:
     agency_urls = list_agency_urls()
     db = get_supabase_client()
     rows = load_rows(db, sorted(agency_urls))
-    duplicates, orphans = find_page_link_duplicates(rows, agency_urls)
+    groups = find_page_link_duplicates(rows, agency_urls)
+    to_delete = [row for _, extra in groups for row in extra]
 
     print(f"scanned {len(rows)} rows of {', '.join(sorted(agency_urls))}")
-    print(f"duplicates (page-1 twin stored): {len(duplicates)}")
-    for row in duplicates:
-        print(f"  - [{row['agency']}] id={row['id']} created={row['created_at'][:16]} "
-              f"views={row.get('view_count')} stars={row.get('star_rating')} {row['title'][:50]}")
-    print(f"page>1 links without a twin (kept): {len(orphans)}")
-    for row in orphans:
-        print(f"  ? [{row['agency']}] id={row['id']} {row['title'][:50]}")
+    print(f"articles stored more than once: {len(groups)}, rows to delete: {len(to_delete)}")
+    for kept, extra in groups:
+        print(f"  [{kept['agency']}] {kept['title'][:50]}")
+        print(f"     keep   id={kept['id']} views={kept.get('view_count')} stars={kept.get('star_rating')} {kept['link'][-40:]}")
+        for row in extra:
+            print(f"     delete id={row['id']} views={row.get('view_count')} stars={row.get('star_rating')} {row['link'][-40:]}")
 
     if not args.apply:
-        print("\nDry-run: nothing deleted. Re-run with --apply to delete the duplicates.")
+        print("\nDry-run: nothing deleted. Re-run with --apply to delete.")
         return 0
-    for row in duplicates:
-        db.table('articles').delete().eq('id', row['id']).execute()
-    print(f"Deleted {len(duplicates)} rows.")
-    return 0
+    failed = 0
+    for row in to_delete:
+        try:
+            db.table('articles').delete().eq('id', row['id']).execute()
+        except Exception as e:  # e.g. a referencing row; keep going, report at the end
+            failed += 1
+            print(f"  ! delete failed id={row['id']}: {e}")
+    print(f"Deleted {len(to_delete) - failed}/{len(to_delete)} rows.")
+    return 1 if failed else 0
 
 
 if __name__ == '__main__':
