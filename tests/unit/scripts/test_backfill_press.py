@@ -87,3 +87,12 @@ def test_walk_with_any_problem_or_no_rows_is_incomplete():
     assert backfill.walk_is_complete([], []) is False
     assert backfill.walk_is_complete(row, [SourceIssue(SourceProblem.EMPTY, "x")]) is False
     assert backfill.walk_is_complete(row, [SourceIssue(SourceProblem.FETCH_ERROR, "503")]) is False
+
+
+def test_list_delay_parsing():
+    import argparse
+
+    assert backfill.parse_delay("15,25") == (15.0, 25.0)
+    for bad in ("0,5", "9,3"):
+        with pytest.raises(argparse.ArgumentTypeError):
+            backfill.parse_delay(bad)

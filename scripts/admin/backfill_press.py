@@ -14,7 +14,8 @@ pacing, then plans one action per listed article:
 Articles dated today are left to the regular collector.
 
 Request policy (sites must never see this as abuse):
-  - one list page every 4-7 s, single attempt, stop at the first error;
+  - one list page every 4-7 s (--list-delay to slow down), single attempt,
+    stop at the first error;
   - detail pages only on --apply and only for agencies with a content
     selector (FSC), each 4-7 s apart; MOEF detail pages have no body text;
   - hard caps on pages (--max-pages) and inserts (--max-inserts).
@@ -24,6 +25,10 @@ Needs the same Supabase env as the collector. Easiest: run the
 
   python scripts/admin/backfill_press.py --agency MOEF --since 2026-06-28
   python scripts/admin/backfill_press.py --agency MOEF --since 2026-06-28 --apply
+  python scripts/admin/backfill_press.py --agency MOEF --since 2026-06-28 --list-delay 15,25
+
+mofe.go.kr closed the connection on the 3rd list page at 4-7 s from a
+GitHub Actions runner (2026-11-14); use a slower --list-delay there.
 """
 
 import argparse
@@ -175,6 +180,13 @@ def apply_plan(db, agency: Dict, plan, max_inserts: int) -> None:
     logger.info(f"Inserted {saved}/{len(inserts)} rows.")
 
 
+def parse_delay(text: str) -> Tuple[float, float]:
+    low, high = (float(x) for x in text.split(','))
+    if not 0 < low <= high:
+        raise argparse.ArgumentTypeError("--list-delay must be MIN,MAX with 0 < MIN <= MAX")
+    return low, high
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--agency', required=True)
@@ -182,6 +194,8 @@ def main() -> int:
     parser.add_argument('--apply', action='store_true', help='write to the DB (default: dry-run)')
     parser.add_argument('--max-pages', type=int, default=80)
     parser.add_argument('--max-inserts', type=int, default=800)
+    parser.add_argument('--list-delay', type=parse_delay, default=LIST_DELAY_SECONDS,
+                        help='seconds between list pages, MIN,MAX (default 4,7)')
     args = parser.parse_args()
 
     agency = next((a for a in load_agencies() if a.get('code') == args.agency), None)
@@ -196,7 +210,7 @@ def main() -> int:
 
     source_health.reset()
     listed = list_scraper.fetch_list_items(
-        list_config_for(agency), since=since, max_pages=args.max_pages, delay_range=LIST_DELAY_SECONDS,
+        list_config_for(agency), since=since, max_pages=args.max_pages, delay_range=args.list_delay,
     )
     problems = source_health.snapshot().get(agency['code'], [])
     for problem in problems:

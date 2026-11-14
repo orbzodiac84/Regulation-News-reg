@@ -21,6 +21,10 @@ on:
         description: "backfill: start date YYYY-MM-DD (KST)"
         required: false
         default: ""
+      list_delay:
+        description: "backfill: seconds between list pages MIN,MAX (MOEF: 15,25)"
+        required: false
+        default: "4,7"
       apply:
         description: "Write to the DB (unchecked = dry-run report only)"
         type: boolean
@@ -60,13 +64,14 @@ jobs:
         AGENCY: ${{ inputs.agency }}
         SINCE: ${{ inputs.since }}
         APPLY: ${{ inputs.apply }}
+        LIST_DELAY: ${{ inputs.list_delay }}
       run: |
         export PYTHONPATH=$PYTHONPATH:.
         APPLY_FLAG=""
         if [ "$APPLY" = "true" ]; then APPLY_FLAG="--apply"; fi
         case "$TASK" in
           backfill)
-            python scripts/admin/backfill_press.py --agency "$AGENCY" --since "$SINCE" $APPLY_FLAG ;;
+            python scripts/admin/backfill_press.py --agency "$AGENCY" --since "$SINCE" --list-delay "$LIST_DELAY" $APPLY_FLAG ;;
           dedupe-page-links)
             python scripts/admin/dedupe_page_links.py $APPLY_FLAG ;;
           *)
