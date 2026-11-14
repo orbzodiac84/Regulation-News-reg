@@ -1,12 +1,20 @@
 """Collector tests for ``published_at_source`` propagation."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
 from src.collectors import list_scraper, rss_parser, sanction_scraper
 from src.collectors.date_parser import KST
 from src.config.agency_codes import PublishedAtSource
+
+
+def _today_dash() -> str:
+    return datetime.now(KST).strftime("%Y-%m-%d")
+
+
+def _today_compact() -> str:
+    return datetime.now(KST).strftime("%Y%m%d")
 
 
 class _Response:
@@ -68,21 +76,16 @@ def _sanction_html(date_text: str) -> bytes:
     ).encode("utf-8")
 
 
-def _today_dash() -> str:
-    return datetime.now(KST).strftime("%Y-%m-%d")
-
-
-def _today_compact() -> str:
-    return datetime.now(KST).strftime("%Y%m%d")
-
-
 @pytest.mark.parametrize(
     ("date_text", "expected_source"),
     [
         ("Tue, 05 May 2026 09:00:00 +0900", PublishedAtSource.SOURCE.value),
-        ("Tue, 05 May 2026 00:00:00 +0900", PublishedAtSource.COLLECTED_FALLBACK.value),
+        # Date-only before today: stored as that date (KST midnight), not "now".
+        ("Tue, 05 May 2026 00:00:00 +0900", PublishedAtSource.SOURCE.value),
         ("2026-11-09 11:06:14.0", PublishedAtSource.SOURCE.value),
-        ("2026-10-25 00:00:00.0", PublishedAtSource.COLLECTED_FALLBACK.value),
+        ("2026-10-25 00:00:00.0", PublishedAtSource.SOURCE.value),
+        # Date-only for today: time unknown, so collection time is used.
+        (_today_dash() + " 00:00:00.0", PublishedAtSource.COLLECTED_FALLBACK.value),
         ("not a date", PublishedAtSource.COLLECTED_FALLBACK.value),
     ],
 )
@@ -151,3 +154,37 @@ def test_sanction_items_include_published_at_source(
 
     assert len(items) == 1
     assert items[0]["published_at_source"] == expected_source
+
+
+def test_past_dated_list_item_is_filed_under_its_own_date(monkeypatch):
+    yesterday = datetime.now(KST) - timedelta(days=1)
+    monkeypatch.setattr(list_scraper.time, "sleep", lambda _: None)
+    monkeypatch.setattr(
+        list_scraper.http,
+        "fetch",
+        lambda *args, **kwargs: _Response(_list_html(yesterday.strftime("%Y.%m.%d."))),
+    )
+
+    items = list_scraper.fetch_list_items(_list_config())
+
+    assert len(items) == 1
+    assert items[0]["published_at_source"] == PublishedAtSource.SOURCE.value
+    stored = datetime.fromisoformat(items[0]["published_at"])
+    assert stored.astimezone(KST).date() == yesterday.date()
+    assert (stored.hour, stored.minute) == (0, 0)
+
+
+def test_sanction_items_keep_collection_time_for_past_dates(monkeypatch):
+    """Sanction list dates are action dates, not posting dates: never backdate."""
+    last_week = (datetime.now(KST) - timedelta(days=7)).strftime("%Y%m%d")
+    monkeypatch.setattr(sanction_scraper.time, "sleep", lambda _: None)
+    monkeypatch.setattr(
+        sanction_scraper.http,
+        "fetch",
+        lambda *args, **kwargs: _Response(_sanction_html(last_week)),
+    )
+
+    items = sanction_scraper.fetch_sanction_items(_sanction_config())
+
+    assert len(items) == 1
+    assert items[0]["published_at_source"] == PublishedAtSource.COLLECTED_FALLBACK.value

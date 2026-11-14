@@ -7,8 +7,9 @@ from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 from typing import List, Dict, Optional
 
-from src.config.agency_codes import PublishedAtSource
-from src.collectors.date_parser import has_specific_time
+from src.collectors import source_health
+from src.collectors.date_parser import resolve_published_at
+from src.collectors.source_health import SourceProblem
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,8 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
 
     import requests
 
-    verify = get_ssl_verify(agency.get('code') or agency.get('id'))
+    agency_id = agency.get('code') or agency.get('id')
+    verify = get_ssl_verify(agency_id)
 
     response = None
     last_err: Optional[Exception] = None
@@ -100,16 +102,19 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
                 time.sleep(sleep_s)
                 continue
             logger.warning(f"  > Error processing URL {target_url} after {attempt} attempts: {e}")
+            source_health.record(agency_id, SourceProblem.FETCH_ERROR, f"{type(e).__name__} after {attempt} attempts")
             return []
         except Exception as e:
             # HTTP errors / parser errors / other — do NOT retry. If the server
             # actually answered with 4xx/5xx that is its final word and hammering
             # the endpoint risks getting blocklisted.
             logger.error(f"  > Error processing URL {target_url}: {e}")
+            source_health.record(agency_id, SourceProblem.FETCH_ERROR, str(e))
             return []
 
     if response is None:
         logger.error(f"  > Error processing URL {target_url}: {last_err}")
+        source_health.record(agency_id, SourceProblem.FETCH_ERROR, str(last_err))
         return []
 
     # Parse XML content
@@ -122,6 +127,9 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
     real_dates: List[datetime] = []
     if not feed.entries:
         logger.warning(f"  > No entries found in feed.")
+        source_health.record(agency_id, SourceProblem.EMPTY, "feed has no entries")
+
+    now_kst = datetime.now(KST)
 
     for entry in feed.entries:
         # Extract fields
@@ -142,29 +150,17 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
                     break
                 except ValueError:
                     continue
-        
-        # Get ID (support 'code' or 'id')
-        agency_id = agency.get('code') or agency.get('id')
-        
+
         if published_at:
             real_dates.append(published_at)
-        has_source_time = has_specific_time(published)
-        published_at_source = (
-            PublishedAtSource.SOURCE.value
-            if published_at and has_source_time
-            else PublishedAtSource.COLLECTED_FALLBACK.value
-        )
+        stored_at, stored_source = resolve_published_at(published_at, published, now_kst)
 
         item = {
             'agency': agency_id,
             'title': title,
             'link': link,
-            'published_at': (
-                published_at.isoformat()
-                if published_at and has_source_time
-                else datetime.now(KST).isoformat()
-            ),
-            'published_at_source': published_at_source,
+            'published_at': stored_at.isoformat(),
+            'published_at_source': stored_source.value,
             'source_published_at_str': published
         }
         parsed_items.append(item)
@@ -178,12 +174,16 @@ def fetch_rss_feed(agency: Dict) -> List[Dict]:
     # renamed/abandoned slug keeps responding 200 with old items.
     if real_dates:
         latest = max(real_dates)
-        age_days = (datetime.now(KST) - latest).days
+        age_days = (now_kst - latest).days
         if age_days > RSS_STALE_WARN_DAYS:
             logger.warning(
-                f"[STALE RSS] {agency.get('code') or agency.get('id')} "
+                f"[STALE RSS] {agency_id} "
                 f"latest entry is {age_days}d old ({latest.date().isoformat()}); "
                 f"source URL may be dead: {target_url}"
+            )
+            source_health.record(
+                agency_id, SourceProblem.STALE,
+                f"latest entry {latest.date().isoformat()} ({age_days}d old)",
             )
 
     return parsed_items

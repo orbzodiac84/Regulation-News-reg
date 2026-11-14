@@ -7,6 +7,7 @@ const KST_TIME_FORMATTER = new Intl.DateTimeFormat('ko-KR', {
 })
 
 const PUBLISHED_AT_SOURCE = {
+    SOURCE: 'source',
     COLLECTED_FALLBACK: 'collected_fallback',
 } as const
 
@@ -98,6 +99,13 @@ export function getArticleDisplayTime(article: {
 
     if (!article.published_at_source && isKSTMidnight(article.published_at)) {
         return collectedDisplayTime(article)
+    }
+
+    // Date-only source rows collected after their date are stored at KST
+    // midnight of that date (the collector never stores a real 00:00 time as
+    // `source`). The date header already says when; there is no time to show.
+    if (article.published_at_source === PUBLISHED_AT_SOURCE.SOURCE && isKSTMidnight(article.published_at)) {
+        return unknownDisplayTime()
     }
 
     return publishedDisplayTime(article.published_at)

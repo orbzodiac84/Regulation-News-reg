@@ -1,4 +1,5 @@
 import logging
+import re
 
 import requests
 
@@ -9,6 +10,15 @@ from src.config.settings import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def escape_markdown(text: str) -> str:
+    """Escape Telegram legacy-Markdown control characters (``_ * ` [``).
+
+    Agency codes (``FSS_REG``) and URLs carry underscores that would
+    otherwise open an italic entity and make Telegram reject the message.
+    """
+    return re.sub(r'([_*`\[])', r'\\\1', text)
 
 
 class TelegramNotifier:

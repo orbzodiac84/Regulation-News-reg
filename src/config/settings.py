@@ -72,6 +72,13 @@ SCRAPER_RETRY_DELAY_MAX = 4.0
 SSL_VERIFY = True
 SUPPRESS_SSL_WARNINGS = True
 
+# --- Source Health Digest ---
+# The collector runs every 30 min (cron-job.org). Only the run that starts in
+# this KST window sends the Telegram digest of failing sources, so a source
+# that stays broken produces one alert per day instead of 48.
+SOURCE_HEALTH_DIGEST_HOUR_KST = 9
+SOURCE_HEALTH_DIGEST_WINDOW_MINUTES = 30
+
 # --- Scheduler Settings ---
 COLLECTION_INTERVAL_MINUTES = 10
 
