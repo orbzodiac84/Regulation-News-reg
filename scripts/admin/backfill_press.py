@@ -41,6 +41,8 @@ from collections import Counter
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
+from dateutil.parser import isoparse
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.collectors import content_scraper, list_scraper, source_health  # noqa: E402
@@ -74,7 +76,9 @@ def normalize_title(title: str) -> str:
 
 
 def kst_date(iso: str):
-    return datetime.fromisoformat(iso.replace('Z', '+00:00')).astimezone(KST).date()
+    # isoparse, not datetime.fromisoformat: Postgres trims trailing zeros
+    # ("...52.39024+00:00"), which fromisoformat rejects on Python 3.10.
+    return isoparse(iso).astimezone(KST).date()
 
 
 def load_existing_rows(db, agency_code: str) -> List[Dict]:

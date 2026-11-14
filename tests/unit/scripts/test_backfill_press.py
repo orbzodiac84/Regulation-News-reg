@@ -96,3 +96,11 @@ def test_list_delay_parsing():
     for bad in ("0,5", "9,3"):
         with pytest.raises(argparse.ArgumentTypeError):
             backfill.parse_delay(bad)
+
+
+def test_db_timestamps_with_trimmed_fractions_parse():
+    """Postgres returns '...52.39024+00:00' (5 digits); fromisoformat on 3.10 rejects it."""
+    stored = _row(MOEF_LINK.format("MOSF_8"), "t", "2026-11-10T02:30:52.39024+00:00", "collected_fallback")
+    plan = backfill.plan_actions([_listed("MOSF_8", "t", "2026-10-28")], [stored])
+    assert len(plan["REDATE"]) == 1
+    assert str(backfill.kst_date("2026-11-10T02:30:52.4+00:00")) == "2026-11-10"
