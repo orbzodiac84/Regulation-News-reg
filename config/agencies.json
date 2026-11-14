@@ -22,7 +22,17 @@
       "category": "press_release",
       "collection_method": "rss",
       "url": "https://www.mofe.go.kr/com/detailRssTagService.do?bbsId=MOSFBBS_000000000028",
-      "base_url": "https://www.mofe.go.kr"
+      "base_url": "https://www.mofe.go.kr",
+      "list_fallback": {
+        "url": "https://www.mofe.go.kr/nw/nes/nesdta.do?bbsId=MOSFBBS_000000000028&menuNo=4010100",
+        "link_id_pattern": "fn_egov_select\\('(MOSF_\\d+)'\\)",
+        "link_template": "https://www.mofe.go.kr/nw/nes/detailNesDtaView.do?searchBbsId=MOSFBBS_000000000028&menuNo=4010100&searchNttId={id}",
+        "selector": {
+          "list": "ul.boardType3.explnList > li",
+          "title": "h3 a",
+          "date": "span.date"
+        }
+      }
     },
     {
       "code": "FSS",

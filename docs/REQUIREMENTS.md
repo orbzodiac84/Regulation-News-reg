@@ -27,7 +27,7 @@
 |------|--------|-------------------|------------------|
 | FSC  | Financial Services Commission | Scraper (보도자료 목록 `/no010101`; 공식 RSS는 "점검 중" 503으로 2026-10 이후 중단) | Every 30 mins |
 | FSS  | Financial Supervisory Service | Scraper (Legacy) | Every 30 mins |
-| MOEF | Ministry of Economy & Finance | RSS | Every 30 mins |
+| MOEF | Ministry of Economy & Finance | RSS (재정경제부 공식 RSS, 최근 40건 ≈ 2주; korea.kr RSS는 2026-07-01 종료). HTML 목록은 `list_fallback`(백필용) | Every 30 mins |
 | BOK  | Bank of Korea | RSS | Every 30 mins |
 | **MAFRA** | ~~Ministry of Agriculture~~ | **Not Implemented** | N/A |
 
@@ -119,6 +119,11 @@ The system uses a 2-Tier AI approach with 2025-Standard Models.
 - **Daily Health Report**:
     - Sent at **09:00 KST** and **18:00 KST**.
     - Content: System Status (OK/Fail), Total Articles Collected Today.
+
+### 6.1.1 Source Health Digest
+- 매 수집 실행이 소스별 이상(응답 오류 / 항목 없음 / 갱신 중단 / 누락 가능)을 기록한다.
+- KST 09:00~09:29에 시작한 실행에서 이상이 있으면 텔레그램 요약 1건(하루 1회).
+- watchdog(전체 최신 기사 1건만 확인)은 기관 하나가 죽어도 감지하지 못한다.
 
 ### 6.2 Notification Channels
 - **Telegram**:

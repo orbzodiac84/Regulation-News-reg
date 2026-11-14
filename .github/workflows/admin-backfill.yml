@@ -1,0 +1,74 @@
+name: Admin - Backfill / Dedupe (manual)
+
+# Manual maintenance runs with the collector's Supabase credentials.
+# Default is a dry-run report; tick "apply" only after reading that report.
+#   backfill           scripts/admin/backfill_press.py --agency X --since YYYY-MM-DD
+#   dedupe-page-links  scripts/admin/dedupe_page_links.py
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task"
+        type: choice
+        options: [backfill, dedupe-page-links]
+        default: backfill
+      agency:
+        description: "backfill: agency code (MOEF, FSC)"
+        required: false
+        default: "MOEF"
+      since:
+        description: "backfill: start date YYYY-MM-DD (KST)"
+        required: false
+        default: ""
+      apply:
+        description: "Write to the DB (unchecked = dry-run report only)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: admin-backfill
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run
+      env:
+        SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_V2 }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_V2 }}
+        SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_V2 }}
+        GEMINI_ENABLED: "false"
+        ENV_TYPE: v2
+        # Inputs go through env, never inline ${{ }} in the script (injection-safe).
+        TASK: ${{ inputs.task }}
+        AGENCY: ${{ inputs.agency }}
+        SINCE: ${{ inputs.since }}
+        APPLY: ${{ inputs.apply }}
+      run: |
+        export PYTHONPATH=$PYTHONPATH:.
+        APPLY_FLAG=""
+        if [ "$APPLY" = "true" ]; then APPLY_FLAG="--apply"; fi
+        case "$TASK" in
+          backfill)
+            python scripts/admin/backfill_press.py --agency "$AGENCY" --since "$SINCE" $APPLY_FLAG ;;
+          dedupe-page-links)
+            python scripts/admin/dedupe_page_links.py $APPLY_FLAG ;;
+          *)
+            echo "unknown task: $TASK"; exit 1 ;;
+        esac
