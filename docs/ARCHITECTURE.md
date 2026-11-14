@@ -182,7 +182,9 @@ per-agency TLS verify 정책을 단일 진실원(`config/agencies.json`)에서 �
   셀렉터 불일치), `STALE`(RSS 최신 항목 14일 초과), `WINDOW_OVERFLOW`(RSS 창 전체가 미저장 /
   페이지 상한 도달)를 기록한다.
 - `Pipeline.run()` 끝에서 로그 요약 + GitHub Actions annotation을 남기고, KST 09:00~09:29에
-  시작한 실행만 텔레그램 요약을 보낸다(하루 1회, `settings.SOURCE_HEALTH_DIGEST_*`).
+  **시작한** 실행만 텔레그램 요약을 보낸다(하루 1회, `settings.SOURCE_HEALTH_DIGEST_*`).
+  종료 시각 기준이면 실행 길이에 따라 0회 또는 2회가 된다.
+- 링크 템플릿 게시판에서 1페이지 행은 있는데 링크를 하나도 못 만들면 `EMPTY`.
 
 ### 4.1.6 Dedup state fail-closed
 - `_load_existing_links` / `_load_sanction_keys` 실패 시 `DedupStateUnavailable`로 사이클을
@@ -193,7 +195,9 @@ per-agency TLS verify 정책을 단일 진실원(`config/agencies.json`)에서 �
 - `backfill_press.py --agency X --since YYYY-MM-DD [--apply]`: 목록을 4~7초 간격으로 넘기며
   누락분 INSERT, 수집 시각으로 잘못 찍힌 행 REDATE. 기본 dry-run. RSS 기관은
   agencies.json의 `list_fallback`(HTML 목록) 사용.
-- `dedupe_page_links.py [--apply]`: 페이지 번호 링크로 생긴 중복 중 1페이지 쌍둥이가 있는 행만 삭제.
+- `dedupe_page_links.py [--apply]`: 1페이지 형태로 묶어 2건 이상인 글만 정리. 별점 → 조회수 →
+  1페이지 링크 → 먼저 저장된 행 순으로 1건을 남긴다(사용자 반응이 있는 행을 지우지 않음).
+- DB 전체 조회는 `src/db/client.select_all()`(1000행 창 페이징, T2) 하나로 통일.
 - 운영 자격증명으로 실행: `.github/workflows/admin-backfill.yml` (workflow_dispatch).
 
 ### 4.2 Supabase Client (`src/db/client.py`)

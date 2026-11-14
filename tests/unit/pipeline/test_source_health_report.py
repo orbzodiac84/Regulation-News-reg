@@ -191,3 +191,42 @@ def test_healthy_run_sends_nothing_even_in_the_slot(monkeypatch):
     p.run()
 
     assert notifier.messages == []
+
+
+def test_digest_slot_is_judged_on_the_run_start_not_its_end(monkeypatch):
+    """A 08:58 run that ends after 09:00 must not send; the 09:00 run will."""
+    notifier = FakeNotifier()
+    clock = iter([
+        KST.localize(datetime(2026, 11, 14, 8, 58)),   # cycle start
+        KST.localize(datetime(2026, 11, 14, 9, 2)),    # anything later
+    ])
+    last = {}
+
+    def now(tz=None):
+        last["t"] = next(clock, last.get("t"))
+        return last["t"]
+
+    p = _pipeline(monkeypatch, FakeDB(links=["x"]), notifier=notifier)
+    monkeypatch.setattr(pipeline_module, "datetime", SimpleNamespace(now=now))
+    monkeypatch.setattr(
+        "src.pipeline.collect_all_rss",
+        lambda: source_health.record("MOEF", SourceProblem.FETCH_ERROR, "404") or [],
+    )
+
+    p.run()
+
+    assert notifier.messages == []
+
+
+def test_workflow_annotation_escapes_newlines_and_percent(monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    p = _pipeline(monkeypatch, FakeDB(links=["x"]))
+    monkeypatch.setattr(
+        "src.pipeline.collect_all_rss",
+        lambda: source_health.record("MOEF", SourceProblem.FETCH_ERROR, "line1\nhttps://x/a%20b") or [],
+    )
+
+    p.run()
+
+    out = capsys.readouterr().out
+    assert "::warning title=Source health MOEF::fetch_error: line1%0Ahttps://x/a%2520b" in out
