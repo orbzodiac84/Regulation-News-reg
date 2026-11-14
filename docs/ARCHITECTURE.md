@@ -161,6 +161,40 @@ per-agency TLS verify 정책을 단일 진실원(`config/agencies.json`)에서 �
   query/fragment를 제거한다. FSC 보도자료 목록은 상세 링크에 `curPage=N`을 붙이므로,
   제거하지 않으면 같은 글이 2페이지로 밀릴 때 다른 링크가 되어 link 기반 dedup이 깨진다.
 - 상세 링크 식별자가 query에 있는 기관(예: FSC_REG `view?noticeId=`)은 켜면 안 된다.
+- 페이지 번호 정규화(전 기관 공통): FSS·BOK·FSS_REG·FSC_REG는 현재 목록 페이지 번호를
+  상세 링크에 넣는다(`pageIndex=N` / `curPage=N`). `pagination.normalize_page_param()`이
+  N>1 페이지에서 얻은 링크를 1페이지 형태(`=1`, 1페이지는 항상 명시적 `=1`로 요청)로 되돌린다.
+  없으면 2페이지 이후의 같은 글이 다른 링크가 되어 중복 저장된다(2026-11-03 19건).
+- JS 링크 게시판: `link_id_pattern` + `link_template`(agencies.json)으로 상세 URL을 만든다
+  (MOEF `javascript:fn_egov_select('MOSF_…')`).
+
+### 4.1.4 List cutoff (언제 페이지 넘김을 멈추나)
+- `list_scraper.compute_cutoff()`: `max(가장 최근 저장 published_at − 1일, 지금 − 7일)`을
+  **KST 자정으로 내림**. 목록은 날짜만 보여주므로 시각 기준 컷오프는 게시판이 전날 날짜로
+  늦게 올린 글을 영구 누락시킨다(MOEF에서 관찰). 겹치는 구간은 link dedup이 걸러낸다.
+- 페이지 상한(`MAX_PAGES`=15)에 걸려 컷오프에 못 미치면 `WINDOW_OVERFLOW`로 보고한다.
+- 정기 수집은 7일보다 오래된 글을 보지 않는다. 그보다 긴 공백은 `scripts/admin/backfill_press.py`.
+
+### 4.1.5 Source health (죽은 소스 감지)
+- 수집기는 실패해도 `[]`를 반환해 사이클을 계속 돈다. 그래서 2026-07 korea.kr RSS 종료 후
+  MOEF가 4개월간 매 실행 404였는데도 실행은 모두 성공으로 보였다.
+- `src/collectors/source_health.py`: 수집기가 `FETCH_ERROR`(HTTP/연결 실패), `EMPTY`(항목 0 /
+  셀렉터 불일치), `STALE`(RSS 최신 항목 14일 초과), `WINDOW_OVERFLOW`(RSS 창 전체가 미저장 /
+  페이지 상한 도달)를 기록한다.
+- `Pipeline.run()` 끝에서 로그 요약 + GitHub Actions annotation을 남기고, KST 09:00~09:29에
+  시작한 실행만 텔레그램 요약을 보낸다(하루 1회, `settings.SOURCE_HEALTH_DIGEST_*`).
+
+### 4.1.6 Dedup state fail-closed
+- `_load_existing_links` / `_load_sanction_keys` 실패 시 `DedupStateUnavailable`로 사이클을
+  중단한다(수집 요청 전). 빈 캐시로 진행하면 모든 글이 신규로 처리된다: 2026-11-03 Supabase
+  400 한 번에 7일치 재스캔, 상세 페이지 대량 요청(mafra.go.kr가 연결을 끊음), 중복 19건 저장.
+
+### 4.1.7 Backfill / dedupe tools (`scripts/admin/`)
+- `backfill_press.py --agency X --since YYYY-MM-DD [--apply]`: 목록을 4~7초 간격으로 넘기며
+  누락분 INSERT, 수집 시각으로 잘못 찍힌 행 REDATE. 기본 dry-run. RSS 기관은
+  agencies.json의 `list_fallback`(HTML 목록) 사용.
+- `dedupe_page_links.py [--apply]`: 페이지 번호 링크로 생긴 중복 중 1페이지 쌍둥이가 있는 행만 삭제.
+- 운영 자격증명으로 실행: `.github/workflows/admin-backfill.yml` (workflow_dispatch).
 
 ### 4.2 Supabase Client (`src/db/client.py`)
 - **Responsibility**: Singleton connection to PostgreSQL.
