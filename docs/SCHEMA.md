@@ -69,13 +69,13 @@ The RLS hardening migration grants `anon` and `authenticated` column-level SELEC
 
 ## 5. `published_at_source`
 
-- `source`: `published_at` came from the source page, RSS feed, or list item.
-- `collected_fallback`: the source did not provide a usable publication time, so collection time was saved in `published_at`.
+- `source`: `published_at` came from the source page, RSS feed, or list item. A date-only source whose date is before the collection day (KST) is stored as KST midnight of that date (`date_parser.resolve_published_at`); a real source time is never exactly `00:00`.
+- `collected_fallback`: the source gave no usable time and the date is today (or missing), so collection time was saved in `published_at`. Sanction notices always use this for date-only rows (their list date is the action date, not the posting date).
 - `null`: legacy rows or rows saved before this marker existed.
 
 Current UI behavior:
 
-- `published_at_source = source`: display the KST time from `published_at`.
+- `published_at_source = source`: display the KST time from `published_at`; at KST `00:00` (date-only) show no time.
 - `published_at_source = collected_fallback`: display collection time, preferring `created_at` then `published_at`.
 - `published_at_source = null` and KST time is `00:00`: treat as legacy/date-only and display collection time fallback.
 

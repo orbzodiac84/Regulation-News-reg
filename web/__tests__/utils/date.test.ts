@@ -69,6 +69,17 @@ describe('getArticleDisplayTime', () => {
         })
     })
 
+    it('shows no time for date-only source rows stored at KST midnight', () => {
+        expect(getArticleDisplayTime({
+            published_at: '2026-10-27T15:00:00.000Z',
+            created_at: '2026-11-10T02:30:00.000Z',
+            published_at_source: 'source',
+        })).toEqual({
+            timeText: '',
+            source: 'unknown',
+        })
+    })
+
     it('treats unknown published_at_source values as legacy published rows', () => {
         expect(getArticleDisplayTime({
             published_at: '2026-05-04T05:45:00.000Z',

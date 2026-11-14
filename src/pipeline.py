@@ -1,12 +1,15 @@
 import logging
 import json
+import os
 from datetime import datetime
 from typing import Dict, List, Optional, Set, Tuple
 
+from src.collectors import source_health
 from src.collectors.rss_parser import collect_all_rss
 from src.collectors.sanction_scraper import extract_sanction_key
 from src.collectors.scraper import ContentScraper
 from src.collectors.date_parser import KST
+from src.collectors.source_health import SourceProblem
 from src.config.agency_codes import AgencyCode, ArticleCategory, PublishedAtSource
 from src.config.agency_loader import get_sanction_codes, is_sanction_agency
 from src.db.client import get_supabase_client
@@ -15,6 +18,56 @@ logger = logging.getLogger(__name__)
 
 
 SanctionKey = Tuple[str, str, str]
+
+
+class DedupStateUnavailable(RuntimeError):
+    """The dedup caches could not be loaded; the cycle must not continue.
+
+    Continuing with an empty cache treats every listed article as new. On
+    2026-11-03 a transient Supabase 400 did exactly that: the run re-fetched
+    detail pages for every listed article (mafra.go.kr started closing the
+    connection) and stored 19 duplicate rows. Aborting is cheap: the next
+    cycle runs 30 minutes later.
+    """
+
+
+def build_article_row(item: Dict) -> Dict:
+    """``articles`` insert payload for a collected item.
+
+    Shared by ``Pipeline._save_item`` and ``scripts/admin/backfill_press.py``.
+    """
+    analysis_result = item.get('analysis_result')
+    pdf_url = item.get('pdf_url')
+    if pdf_url:
+        if isinstance(analysis_result, dict):
+            # New dict; do not mutate the original (shared with _notify_item).
+            analysis_result = {**analysis_result, 'pdf_url': pdf_url}
+        else:
+            if analysis_result is not None:
+                logger.warning(
+                    "  > analysis_result has unexpected type %s; replacing with pdf_url-only dict.",
+                    type(analysis_result).__name__,
+                )
+            analysis_result = {'pdf_url': pdf_url}
+
+    published_at = item.get('published_at')
+    if published_at:
+        published_at_source = item.get('published_at_source')
+    else:
+        published_at = datetime.now(KST).isoformat()
+        published_at_source = PublishedAtSource.COLLECTED_FALLBACK.value
+
+    data = {
+        "agency": item['agency'],
+        "title": item['title'],
+        "link": item['link'],
+        "published_at": published_at,
+        "published_at_source": published_at_source,
+        "content": item.get('content') or "",
+        "analysis_result": analysis_result,
+        "category": item.get('category', ArticleCategory.PRESS_RELEASE),
+    }
+    return data
 
 
 class Pipeline:
@@ -90,6 +143,8 @@ class Pipeline:
         the full table once it grows past 1000 rows, which silently broke
         dedup. Page through the table in fixed-size windows until the last
         batch comes back short.
+
+        Raises ``DedupStateUnavailable`` on failure (see its docstring).
         """
         if not self.supabase:
             return set()
@@ -114,13 +169,14 @@ class Pipeline:
                     break
                 start += page_size
         except Exception as e:
-            logger.error(f"Failed to load existing links: {e}")
+            raise DedupStateUnavailable(f"Failed to load existing links: {e}") from e
         return links
 
     def _load_sanction_keys(self) -> Set[SanctionKey]:
         """Load existing sanction identity tuples for all sanction agencies.
 
-        Paginated for the same reason as ``_load_existing_links``.
+        Paginated for the same reason as ``_load_existing_links``; raises
+        ``DedupStateUnavailable`` on failure for the same reason too.
         """
         if not self.supabase:
             return set()
@@ -139,8 +195,9 @@ class Pipeline:
                         .execute()
                     )
                 except Exception as e:
-                    logger.error(f"Failed to load sanction keys for {agency_code}: {e}")
-                    break
+                    raise DedupStateUnavailable(
+                        f"Failed to load sanction keys for {agency_code}: {e}"
+                    ) from e
 
                 batch = res.data or []
                 for row in batch:
@@ -271,38 +328,7 @@ class Pipeline:
         if not self.supabase:
             return
         try:
-            analysis_result = item.get('analysis_result')
-            pdf_url = item.get('pdf_url')
-            if pdf_url:
-                if isinstance(analysis_result, dict):
-                    # New dict; do not mutate the original (shared with _notify_item).
-                    analysis_result = {**analysis_result, 'pdf_url': pdf_url}
-                else:
-                    if analysis_result is not None:
-                        logger.warning(
-                            "  > analysis_result has unexpected type %s; replacing with pdf_url-only dict.",
-                            type(analysis_result).__name__,
-                        )
-                    analysis_result = {'pdf_url': pdf_url}
-
-            published_at = item.get('published_at')
-            if published_at:
-                published_at_source = item.get('published_at_source')
-            else:
-                published_at = datetime.now(KST).isoformat()
-                published_at_source = PublishedAtSource.COLLECTED_FALLBACK.value
-
-            data = {
-                "agency": item['agency'],
-                "title": item['title'],
-                "link": item['link'],
-                "published_at": published_at,
-                "published_at_source": published_at_source,
-                "content": item.get('content') or "",
-                "analysis_result": analysis_result,
-                "category": item.get('category', ArticleCategory.PRESS_RELEASE),
-            }
-            self.supabase.table("articles").insert(data).execute()
+            self.supabase.table("articles").insert(build_article_row(item)).execute()
             logger.info("  > Saved to DB.")
         except Exception as e:
             logger.error(f"  > Failed to save to DB: {e}")
@@ -324,11 +350,59 @@ class Pipeline:
             logger.error(f"Notification failed: {e}")
 
     # ------------------------------------------------------------------
+    # Source health
+    # ------------------------------------------------------------------
+    def _check_rss_windows(self, rss_items: List[Dict], existing_links: Set[str]) -> None:
+        """Flag feeds whose entire window is unseen.
+
+        An RSS feed only exposes its latest N entries. If none of them is
+        stored yet, the feed may have rolled past the last collected entry
+        and items in between are missing (or the feed's link format changed,
+        which would also duplicate everything). Skipped on an empty DB.
+        """
+        if not existing_links:
+            return
+        links_by_agency: Dict[str, List[str]] = {}
+        for item in rss_items:
+            links_by_agency.setdefault(str(item['agency']), []).append(item['link'])
+        for agency_id, links in links_by_agency.items():
+            if not any(link in existing_links for link in links):
+                source_health.record(
+                    agency_id, SourceProblem.WINDOW_OVERFLOW,
+                    f"all {len(links)} feed entries are new; entries older than the feed window may be missing",
+                )
+
+    def _report_source_health(self) -> None:
+        issues = source_health.snapshot()
+        if not issues:
+            logger.info("Source health: all sources OK.")
+            return
+
+        in_actions = os.getenv("GITHUB_ACTIONS") == "true"
+        for code, entries in sorted(issues.items()):
+            for issue in entries:
+                logger.warning(f"[SOURCE HEALTH] {code}: {issue.problem.value} - {issue.detail}")
+                if in_actions:
+                    # Workflow command (stdout) -> annotation on the run summary page.
+                    print(f"::warning title=Source health {code}::{issue.problem.value}: {issue.detail}")
+
+        now_kst = datetime.now(KST)
+        if self.notifier and source_health.is_digest_slot(now_kst):
+            agency_names = {code: a.get('name', code) for code, a in self.agency_map.items()}
+            self.notifier.send_message(source_health.format_digest(issues, agency_names, now_kst))
+
+    # ------------------------------------------------------------------
     # Orchestrator
     # ------------------------------------------------------------------
     def run(self):
         logger.info("Starting MarketPulse-Reg Pipeline...")
+        source_health.reset()
+        # An aborted cycle (DedupStateUnavailable) collected nothing to report;
+        # main.py turns it into a critical alert instead.
+        self._run_cycle()
+        self._report_source_health()
 
+    def _run_cycle(self):
         # Build per-cycle dedup caches (1 query per cache).
         existing_links = self._load_existing_links()
         sanction_keys = self._load_sanction_keys()
@@ -341,7 +415,9 @@ class Pipeline:
         all_items: List[Dict] = []
 
         # 1. RSS Collection
-        all_items.extend(self._collect_rss())
+        rss_items = self._collect_rss()
+        self._check_rss_windows(rss_items, existing_links)
+        all_items.extend(rss_items)
 
         # 2. Scraper Collection (non-sanction)
         for agency in scraper_agencies:

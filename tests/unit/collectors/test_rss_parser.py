@@ -286,3 +286,69 @@ class TestFetchRssFeed:
         items = fetch_rss_feed(fresh_agency)
         assert len(items) == 1
         assert items[0]["published_at"] == "2026-11-09T11:06:14+09:00"
+
+
+# ---------------------------------------------------------------------------
+# Source health records (dead feeds must not stay silent)
+# ---------------------------------------------------------------------------
+
+from src.collectors import source_health  # noqa: E402
+from src.collectors.source_health import SourceProblem  # noqa: E402
+
+
+@pytest.fixture
+def clean_health():
+    source_health.reset()
+    yield
+    source_health.reset()
+
+
+class TestRssSourceHealth:
+    def test_http_404_is_recorded(self, monkeypatch, no_sleep, fresh_agency, clean_health):
+        """korea.kr RSS shutdown: 404 on every run went unnoticed for months."""
+        monkeypatch.setattr("requests.get", lambda url, **kw: _make_response(
+            b"", status_code=404,
+            raise_exc=real_requests.exceptions.HTTPError("404 Client Error: Not Found"),
+        ))
+
+        fetch_rss_feed(fresh_agency)
+
+        issue = source_health.snapshot()["TEST"][0]
+        assert issue.problem is SourceProblem.FETCH_ERROR
+        assert "404" in issue.detail
+
+    def test_connection_failure_after_retries_is_recorded(
+        self, monkeypatch, no_sleep, fresh_agency, clean_health
+    ):
+        def fake_get(url, **kw):
+            raise real_requests.exceptions.ConnectionError("reset")
+
+        monkeypatch.setattr("requests.get", fake_get)
+
+        fetch_rss_feed(fresh_agency)
+
+        assert source_health.snapshot()["TEST"][0].problem is SourceProblem.FETCH_ERROR
+
+    def test_empty_feed_is_recorded(self, monkeypatch, no_sleep, fresh_agency, clean_health):
+        monkeypatch.setattr("requests.get", lambda url, **kw: _make_response(_rss_xml("")))
+
+        fetch_rss_feed(fresh_agency)
+
+        assert source_health.snapshot()["TEST"][0].problem is SourceProblem.EMPTY
+
+    def test_stale_feed_is_recorded(self, monkeypatch, no_sleep, fresh_agency, clean_health):
+        old = datetime.now(KST) - timedelta(days=RSS_STALE_WARN_DAYS + 5)
+        monkeypatch.setattr("requests.get", lambda url, **kw: _make_response(_fresh_rss(old)))
+
+        fetch_rss_feed(fresh_agency)
+
+        assert source_health.snapshot()["TEST"][0].problem is SourceProblem.STALE
+
+    def test_healthy_feed_records_nothing(self, monkeypatch, no_sleep, fresh_agency, clean_health):
+        monkeypatch.setattr(
+            "requests.get", lambda url, **kw: _make_response(_fresh_rss(datetime.now(KST)))
+        )
+
+        fetch_rss_feed(fresh_agency)
+
+        assert source_health.snapshot() == {}
